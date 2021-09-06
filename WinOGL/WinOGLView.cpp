@@ -80,7 +80,7 @@ CWinOGLDoc* CWinOGLView::GetDocument() const // デバッグ以外のバージ�
 #endif //_DEBUG
 
 
-// CWinOGLView メッセージ ハンドラー
+// CWinOGLView メッセージ ハンドラーa
 
 
 void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
