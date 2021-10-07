@@ -3,7 +3,7 @@
 //
 
 #pragma once
-
+#include <gl/GL.h>
 
 class CWinOGLView : public CView
 {
@@ -39,6 +39,18 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+private:
+	HGLRC m_hRC;
+
+public:
+	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+	afx_msg void OnDestroy();
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+	afx_msg void OnSize(UINT nType, int cx, int cy);
+
+private:
+	double clickX;
+	double clickY;
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン
