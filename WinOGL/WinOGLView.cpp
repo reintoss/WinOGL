@@ -64,17 +64,11 @@ void CWinOGLView::OnDraw(CDC* pDC)
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT /* | GL_DEPTH_BUFFER_BIT */);
 	
+	AC.Draw(); //問8.1
 
-	glColor3f(1.0,1.0,1.0);
-
-	glPointSize(10);
-	glBegin(GL_POINTS);
-	glVertex2f(clickX, clickY);
-
-	glEnd();
-	
 	glFlush();
 	SwapBuffers(pDC -> m_hDC);
+
 	wglMakeCurrent(pDC -> m_hDC, NULL);
 
 	// TODO: この場所にネイティブ データ用の描画コードを追加します。
@@ -112,6 +106,7 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 	CRect rect;
 	GetClientRect(rect); // 描画領域の大きさを取得
 
+
 	clickX = (double)point.x / rect.Width(); //ex.1920を1とする
 	clickX = clickX * 2 - 1; //区間[0,1]を[-1,0,1]にする
 	if (rect.Width()> rect.Height()) { //横長の時
@@ -123,6 +118,8 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 	if (rect.Height() > rect.Width()) { //縦長の時
 		clickY = clickY * ((double)rect.Height() / rect.Width());
 	}
+
+	AC.AddVertex(clickX, clickY); //問8.2
 
 	RedrawWindow();
 
@@ -167,6 +164,7 @@ int CWinOGLView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 void CWinOGLView::OnDestroy()
 {
 	CView::OnDestroy();
+	AC.FreeVertex();
 	wglDeleteContext(m_hRC);
 	// TODO: ここにメッセージ ハンドラー コードを追加します。
 }

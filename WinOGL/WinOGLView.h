@@ -4,6 +4,7 @@
 
 #pragma once
 #include <gl/GL.h>
+#include "AdminControl.h"
 
 class CWinOGLView : public CView
 {
@@ -41,6 +42,8 @@ public:
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 private:
 	HGLRC m_hRC;
+	CAdminControl AC; //問8.1
+
 
 public:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
