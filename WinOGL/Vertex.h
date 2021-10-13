@@ -13,15 +13,19 @@ private:
 	float y;
 
 	float xy[2];
+
 	//　次の頂点リストを指すポインタ
-	CVertex* next_vertex;
+	CVertex* pre_vertex = NULL;
+	CVertex* next_vertex = NULL;
+
 public:
 	//　頂点のX・Y座標の両方を書き込む
 	void SetXY(float new_x, float new_y);
-	//　頂点のX座標を読み込む込む
+	//　頂点のX座標を読み込む
 	float GetX();
 	//　頂点のY座標を読み込む
 	float GetY();
+	//　頂点のXY座標を読み込む
 	void GetXY(float *d);
 
 	//　次の頂点リストを指すポインタを書き込む
@@ -29,5 +33,6 @@ public:
 	//　次の頂点リストを指すポインタを読み込む
 	CVertex* GetNext();
 
+	void FreeVertex();
 };
 

@@ -26,7 +26,7 @@ void CVertex::SetXY(float new_x, float new_y)
 	y = new_y;
 }
 
-/*//　頂点のX座標を読み込む
+//　頂点のX座標を読み込む
 float CVertex::GetX()
 {
 	return x;
@@ -36,7 +36,7 @@ float CVertex::GetX()
 float CVertex::GetY()
 {
 	return y;
-}*/
+}
 
 //　頂点のXY座標を読み込む
 void CVertex::GetXY(float *d)
@@ -57,4 +57,14 @@ CVertex* CVertex::SetNext(CVertex* new_next)
 CVertex* CVertex::GetNext()
 {
 	return next_vertex;
+}
+
+void CVertex::FreeVertex()
+{
+	CVertex* nowV = this;
+	while (nowV != NULL) {
+		CVertex* del_cell = nowV;
+		nowV = nowV->GetNext();
+		delete del_cell;
+	}
 }

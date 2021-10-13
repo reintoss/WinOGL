@@ -119,7 +119,7 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 		clickY = clickY * ((double)rect.Height() / rect.Width());
 	}
 
-	AC.AddVertex(clickX, clickY); //問8.2
+	AC.CreateShape(clickX, clickY); //問8.2
 
 	RedrawWindow();
 
@@ -164,7 +164,6 @@ int CWinOGLView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 void CWinOGLView::OnDestroy()
 {
 	CView::OnDestroy();
-	AC.FreeVertex();
 	wglDeleteContext(m_hRC);
 	// TODO: ここにメッセージ ハンドラー コードを追加します。
 }
