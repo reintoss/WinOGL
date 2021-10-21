@@ -28,6 +28,12 @@ public:
 	//他交差（特殊）の判定関数
 	int CrossJudge2(CShape* startS, CVertex* startV, float x, float y);
 
+	//打った点が内包しているかの判定関数
+	int NaihouJudge(CShape* startS, CVertex* startV, float x, float y);
+
+	//作成しようとしている図形の中に図形があるかの判定関数
+	int GaihouJudge(CShape* startS, CVertex* startV, float x, float y);
+
 	//2点のベクトルを計算する
 	CVertex* Vector(CVertex* a, CVertex* b);
 
@@ -39,6 +45,9 @@ public:
 
 	//ある直線に対し、2点が分断されているか判定する
 	int BundanJudge(CVertex* a, CVertex* b, CVertex* c, CVertex* d);
+
+	//メモリ解放
+	void FreeMemory();
 
 	//void FreeVertex();
 

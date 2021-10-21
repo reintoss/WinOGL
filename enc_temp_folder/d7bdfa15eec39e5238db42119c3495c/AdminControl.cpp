@@ -349,7 +349,7 @@ void CAdminControl::CreateShape(float x, float y)
         }
     }
     //4“_–ÚˆÈ~‚ÌŽž•Â‚¶‚é‚©”»’è
-    else if (Distance(shape_head->GetV(), x, y) <= 0.1) {
+    else if (Distance(shape_head->GetV(), x, y) <= 0.01) {
         if (CrossJudge(shape_head, shape_head->GetV()->GetNext(), shape_head->GetV()->GetX(), shape_head->GetV()->GetY()) != 1) {
             if (GaihouJudge(shape_head, shape_head->GetV(), x, y) != 1) {
                 shape_head->AddVertex(shape_head->GetV()->GetX(), shape_head->GetV()->GetY());

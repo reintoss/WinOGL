@@ -62,9 +62,12 @@ CVertex* CVertex::GetNext()
 void CVertex::FreeVertex()
 {
 	CVertex* nowV = this;
+
 	while (nowV != NULL) {
 		CVertex* del_cell = nowV;
-		nowV = nowV->GetNext();
-		delete del_cell;
+		if (nowV->GetNext() != NULL) {
+			nowV = nowV->GetNext();
+			delete del_cell;
+		}
 	}
 }

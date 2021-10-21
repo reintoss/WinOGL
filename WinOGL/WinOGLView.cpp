@@ -164,6 +164,7 @@ int CWinOGLView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 void CWinOGLView::OnDestroy()
 {
 	CView::OnDestroy();
+	AC.FreeMemory();
 	wglDeleteContext(m_hRC);
 	// TODO: ここにメッセージ ハンドラー コードを追加します。
 }
