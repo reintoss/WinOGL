@@ -57,6 +57,23 @@ private:
 	CShape* shape_head = NULL;
 	CShape* shape_change = NULL;
 
+public:
+	//XYZボタンが押されているかどうかのフラグ
+	bool AxisFlag = false;
+	//XYZ軸を描画する関数
+	void DrawAxis();
+
+
+	//編集ボタンが押されているかどうかのフラグ
+	bool SelectButtonFlag = false;
+	//選択した点の色を変える関数（実際に色を変えるのはDraw()）
+	void SelectVertex(float x, float y);
+	//被選択のフラグをリセットする関数
+	void NotSelectFlagReset();
+	//今描画している図形たちが閉じているかのフラグ
+	bool ShapeCloseFlag;
+	//ShapeCloseFlagを取得する関数（WinOGLView.cppで使うために関数にする）
+	bool GetShapeCloseFlag();
 };
 
 

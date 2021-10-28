@@ -59,6 +59,31 @@ CVertex* CVertex::GetNext()
 	return next_vertex;
 }
 
+CVertex* CVertex::SetPre(CVertex* new_pre)
+{
+	return pre_vertex = new_pre;
+}
+
+CVertex* CVertex::GetPre()
+{
+	return pre_vertex;
+}
+
+void CVertex::SetSelectVertexFlag(bool f)
+{
+	if (f == true) {
+		SelectVertexFlag = true;
+	}
+	else {
+		SelectVertexFlag = false;
+	}
+}
+
+bool CVertex::GetSelectVertexFlag()
+{
+	return SelectVertexFlag;
+}
+
 void CVertex::FreeVertex()
 {
 	CVertex* nowV = this;

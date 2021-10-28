@@ -54,6 +54,11 @@ public:
 private:
 	double clickX;
 	double clickY;
+public:
+	afx_msg void OnXyz();
+	afx_msg void OnUpdateXyz(CCmdUI* pCmdUI);
+	afx_msg void OnEditSelect();
+	afx_msg void OnUpdateEditSelect(CCmdUI* pCmdUI);
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン

@@ -28,6 +28,10 @@ BEGIN_MESSAGE_MAP(CWinOGLView, CView)
 	ON_WM_DESTROY()
 	ON_WM_ERASEBKGND()
 	ON_WM_SIZE()
+	ON_COMMAND(ID_XYZ, &CWinOGLView::OnXyz)
+	ON_UPDATE_COMMAND_UI(ID_XYZ, &CWinOGLView::OnUpdateXyz)
+	ON_COMMAND(ID_EDIT_SELECT, &CWinOGLView::OnEditSelect)
+	ON_UPDATE_COMMAND_UI(ID_EDIT_SELECT, &CWinOGLView::OnUpdateEditSelect)
 END_MESSAGE_MAP()
 
 // CWinOGLView コンストラクション/デストラクション
@@ -119,7 +123,13 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 		clickY = clickY * ((double)rect.Height() / rect.Width());
 	}
 
-	AC.CreateShape(clickX, clickY); //問8.2
+	//編集ボタンが押されていない場合、通常モード
+	if (AC.SelectButtonFlag == false) {
+		AC.CreateShape(clickX, clickY); //問8.2
+	}
+	else {
+		AC.SelectVertex(clickX, clickY);
+	}
 
 	RedrawWindow();
 
@@ -206,4 +216,57 @@ void CWinOGLView::OnSize(UINT nType, int cx, int cy)
 	RedrawWindow();
 	wglMakeCurrent(clientDC.m_hDC, NULL);
 	// TODO: ここにメッセージ ハンドラー コードを追加します。
+}
+
+
+void CWinOGLView::OnXyz()
+{
+	
+	if (AC.AxisFlag == true) {
+		AC.AxisFlag = false;
+	}
+	else {
+		AC.AxisFlag = true;
+	}
+
+	RedrawWindow();
+}
+
+
+void CWinOGLView::OnUpdateXyz(CCmdUI* pCmdUI)
+{
+	//AxisFlagがtrueの時、ボタンが沈む
+	if (AC.AxisFlag==true) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
+}
+
+
+void CWinOGLView::OnEditSelect()
+{
+	if (AC.GetShapeCloseFlag() == true) {
+		if (AC.SelectButtonFlag == true) {
+			AC.SelectButtonFlag = false;
+		}
+		else {
+			AC.SelectButtonFlag = true;
+		}
+	}
+
+	RedrawWindow();
+}
+
+
+void CWinOGLView::OnUpdateEditSelect(CCmdUI* pCmdUI)
+{
+	//SelectButtonFlagがtrueの時、ボタンが沈む
+	if (AC.SelectButtonFlag == true) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
 }

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "AdminControl.h"
+#include "Vertex.h"
 
 #define PI 3.14159265
 CVertex* vertex_head = NULL;
@@ -9,29 +10,36 @@ CAdminControl::CAdminControl() {
 }
 
 CAdminControl::~CAdminControl() {
-	shape_head->FreeShape();
+    shape_head->FreeShape();
 }
 
-void CAdminControl::Draw(){
+void CAdminControl::Draw() {
 
     CShape* nowS = shape_head;
 
     while (nowS != NULL)
     {
-        glColor3f(1.0, 1.0, 1.0);
-        glPointSize(10);
-        glBegin(GL_POINTS);
 
         CVertex* nowV = nowS->GetV();
 
         while (nowV != NULL)
         {
+            if (nowV->GetSelectVertexFlag() == false) {
+                glColor3f(1.0, 1.0, 1.0); //白
+            }
+            else {
+                glColor3f(1.0, 0, 0); //赤
+            }
+            glPointSize(10);
+            glBegin(GL_POINTS);
             glVertex2f(nowV->GetX(), nowV->GetY());
 
             nowV = nowV->GetNext();
         }
 
         glEnd();
+
+
         glColor3f(1.0, 1.0, 1.0);
         glPointSize(10);
         glBegin(GL_LINE_STRIP);
@@ -48,6 +56,12 @@ void CAdminControl::Draw(){
         nowS = nowS->GetNextS();
 
     }
+
+    //AxisFlagがtrueの時、座標軸を描画する
+    if (AxisFlag == true) {
+        DrawAxis();
+    }
+
 }
 
 
@@ -197,11 +211,11 @@ int CAdminControl::NaihouJudge(CShape* startS, CVertex* startV, float x, float y
                 gaiseki *= -1;
             }
             float naiseki = Naiseki(Vector(s1, g1), Vector(s2, g2));
-            sum += atan2(gaiseki,naiseki);
+            sum += atan2(gaiseki, naiseki);
         }
 
         //内包していれば、1を返す
-        if (sum - (2 * PI) < 0.1 && sum - (2 * PI) > -0.1) {
+        if (sum - (2 * PI) < 0.01 && sum - (2 * PI) > -0.01) {
             return 1;
         }
         sum = 0;
@@ -244,7 +258,7 @@ int CAdminControl::GaihouJudge(CShape* startS, CVertex* startV, float x, float y
                 }
                 float naiseki = Naiseki(Vector(s1, g1), Vector(s2, g2));
                 sum += atan2(gaiseki, naiseki);
-  
+
             }
             //中の点が内包していれば、1を返す
             if (sum - (2 * PI) < 0.1 && sum - (2 * PI) > -0.1) {
@@ -303,10 +317,12 @@ int CAdminControl::BundanJudge(CVertex* a, CVertex* b, CVertex* c, CVertex* d)
 void CAdminControl::FreeMemory()
 {
     shape_head->FreeShape();
+    //shape_head = NULL;
 }
 
 void CAdminControl::CreateShape(float x, float y)
 {
+    ShapeCloseFlag = false;
     //点が何もないとき(1点目)
     if (shape_head == NULL) {
         AddShape();
@@ -323,6 +339,9 @@ void CAdminControl::CreateShape(float x, float y)
             if (CrossJudge(shape_head, shape_head->GetV()->GetNext(), shape_head->GetV()->GetX(), shape_head->GetV()->GetY()) != 1) {
                 shape_head->AddVertex(shape_head->GetV()->GetX(), shape_head->GetV()->GetY());
                 AddShape();
+                ShapeCloseFlag = true;
+            }else if (CrossJudge(shape_head, shape_head->GetV(), x, y) != 1) {
+                shape_head->AddVertex(x, y);
             }
         }//交差判定
         else if (CrossJudge(shape_head, shape_head->GetV(), x, y) == 1) {
@@ -333,12 +352,14 @@ void CAdminControl::CreateShape(float x, float y)
         }
     }
     //図形が2つ目以降の時
-    else if (shape_head->CountVertex() < 1) {
-        if (NaihouJudge(shape_head, shape_head->GetV(), x, y) != 1) {
-            shape_head->AddVertex(x, y);
-        }
+    else if (NaihouJudge(shape_head, shape_head->GetV(), x, y) == 1) {
+        //内包していれば何もしない
     }
-    //3点目までは
+    //1点目は
+    else if (shape_head->CountVertex() < 1) {
+        shape_head->AddVertex(x, y);
+    }
+    //2,3点目は
     else if (shape_head->CountVertex() < 3) {
         //交差判定(特殊)
         if (CrossJudge2(shape_head, shape_head->GetV(), x, y) == 1) {
@@ -350,11 +371,16 @@ void CAdminControl::CreateShape(float x, float y)
     }
     //4点目以降の時閉じるか判定
     else if (Distance(shape_head->GetV(), x, y) <= 0.1) {
-        if (CrossJudge(shape_head, shape_head->GetV()->GetNext(), shape_head->GetV()->GetX(), shape_head->GetV()->GetY()) != 1) {
-            if (GaihouJudge(shape_head, shape_head->GetV(), x, y) != 1) {
-                shape_head->AddVertex(shape_head->GetV()->GetX(), shape_head->GetV()->GetY());
-                AddShape();
+        if (CrossJudge(shape_head, shape_head->GetV()->GetNext(), shape_head->GetV()->GetX(), shape_head->GetV()->GetY()) == 1) {
+            //自交差してなければ打つ
+            if (CrossJudge(shape_head, shape_head->GetV(), x, y) != 1) {
+                shape_head->AddVertex(x, y);
             }
+        }//外包していれば
+        else if (GaihouJudge(shape_head, shape_head->GetV(), x, y) != 1) {
+            shape_head->AddVertex(shape_head->GetV()->GetX(), shape_head->GetV()->GetY());
+            AddShape();
+            ShapeCloseFlag = true;
         }
     }//交差判定
     else if (CrossJudge(shape_head, shape_head->GetV(), x, y) == 1) {
@@ -365,5 +391,57 @@ void CAdminControl::CreateShape(float x, float y)
     }
 }
 
+//座標軸を描画する
+void CAdminControl::DrawAxis()
+{
+    glBegin(GL_LINES);
+    // x軸
+    glColor3f(1.0, 0.0, 0.0);
+    glVertex3f(-1.0, 0.0, 0.0);
+    glVertex3f(1.0, 0.0, 0.0);
+    // y軸
+    glColor3f(0.0, 1.0, 0.0);
+    glVertex3f(0.0, -1.0, 0.0);
+    glVertex3f(0.0, 1.0, 0.0);
+    // z軸
+    glColor3f(0.0, 0.0, 1.0);
+    glVertex3f(0.0, 0.0, -1.0);
+    glVertex3f(0.0, 0.0, 1.0);
+    glEnd();
+}
 
+//頂点・稜線・形状を選択すると色が変わる
+void CAdminControl::SelectVertex(float x, float y)
+{
 
+    //各図形と各点を見ていく
+    //図形は今のshape_head以外、点は始点以外を見る
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+            if (Distance(nowV, x, y) <= 0.1) {
+                if (nowV->GetSelectVertexFlag() == false) {
+                    NotSelectFlagReset();
+                    nowV->SetSelectVertexFlag(true);
+                }
+                else {
+                    nowV->SetSelectVertexFlag(false);
+                }
+            }
+        }
+    }
+}
+
+void CAdminControl::NotSelectFlagReset()
+{
+    //各図形と各点を見ていく
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+            nowV->SetSelectVertexFlag(false);//フラグを0に
+        }
+    }
+}
+
+bool CAdminControl::GetShapeCloseFlag()
+{
+    return ShapeCloseFlag;
+}
