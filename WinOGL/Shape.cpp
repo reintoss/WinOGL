@@ -95,3 +95,18 @@ int CShape::CountVertex()
 
     return c;
 }
+
+void CShape::SetSelectShapeFlag(bool f)
+{
+    if (f == true) {
+        SelectShapeFlag = true;
+    }
+    else {
+        SelectShapeFlag = false;
+    }
+}
+
+bool CShape::GetSelectShapeFlag()
+{
+    return SelectShapeFlag;
+}

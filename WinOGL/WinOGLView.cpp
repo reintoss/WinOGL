@@ -128,7 +128,11 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 		AC.CreateShape(clickX, clickY); //問8.2
 	}
 	else {
-		AC.SelectVertex(clickX, clickY);
+		if (AC.SelectVertex(clickX, clickY) != 1) {
+			if (AC.SelectLine(clickX, clickY) != 1) {
+				AC.SelectShape(clickX, clickY);
+			}
+		}
 	}
 
 	RedrawWindow();
@@ -250,6 +254,7 @@ void CWinOGLView::OnEditSelect()
 	if (AC.GetShapeCloseFlag() == true) {
 		if (AC.SelectButtonFlag == true) {
 			AC.SelectButtonFlag = false;
+			AC.NotSelectFlagReset();
 		}
 		else {
 			AC.SelectButtonFlag = true;

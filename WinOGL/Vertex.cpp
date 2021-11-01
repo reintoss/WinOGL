@@ -84,6 +84,21 @@ bool CVertex::GetSelectVertexFlag()
 	return SelectVertexFlag;
 }
 
+void CVertex::SetSelectLineFlag(bool f)
+{
+	if (f == true) {
+		SelectLineFlag = true;
+	}
+	else {
+		SelectLineFlag = false;
+	}
+}
+
+bool CVertex::GetSelectLineFlag()
+{
+	return SelectLineFlag;
+}
+
 void CVertex::FreeVertex()
 {
 	CVertex* nowV = this;

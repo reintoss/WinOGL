@@ -13,6 +13,7 @@ private:
 	float y;
 
 	bool SelectVertexFlag = false;
+	bool SelectLineFlag = false;
 
 	float xy[2];
 
@@ -41,10 +42,13 @@ public:
 	//　前の頂点リストを指すポインタを読み込む
 	CVertex* GetPre();
 
-
-	//　頂点のX・Y座標の両方を書き込む
+	// 各点のフラグをセット・取得する関数
 	void SetSelectVertexFlag(bool f);
 	bool GetSelectVertexFlag();
+
+	// 各線のフラグをセット・取得する関数
+	void SetSelectLineFlag(bool f);
+	bool GetSelectLineFlag();
 
 	void FreeVertex();
 };

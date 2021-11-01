@@ -39,20 +39,34 @@ void CAdminControl::Draw() {
 
         glEnd();
 
-
-        glColor3f(1.0, 1.0, 1.0);
-        glPointSize(10);
-        glBegin(GL_LINE_STRIP);
-
         nowV = nowS->GetV();
 
         while (nowV != NULL)
         {
+            if (nowV->GetSelectLineFlag() == false) {
+                glColor3f(1.0, 1.0, 1.0); //白
+            }
+            else {
+                glColor3f(1.0, 0, 0); //赤
+            }
+            glLineWidth(1);
+            glBegin(GL_LINE_STRIP);
+
             glVertex2f(nowV->GetX(), nowV->GetY());
 
+            if (nowV->GetNext() != NULL) {
+                glVertex2f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY());
+            }
             nowV = nowV->GetNext();
         }
         glEnd();
+
+
+        //SelectShapeFlagがtrueの時、形状内を塗りつぶす
+        if (nowS->GetSelectShapeFlag() == true) {
+            DrawShape(nowS);
+        }
+
         nowS = nowS->GetNextS();
 
     }
@@ -88,9 +102,9 @@ float CAdminControl::Distance(CVertex* s, float x, float y)
 
 
 //自交差＆他交差の判定関数（交差していた場合、result = 1）
-int CAdminControl::CrossJudge(CShape* startS, CVertex* startV, float x, float y)
+bool CAdminControl::CrossJudge(CShape* startS, CVertex* startV, float x, float y)
 {
-    int result = 0;
+    bool result = false;
     CVertex* nowV = startV;
     CVertex* s1;
     CVertex* s2;
@@ -119,7 +133,7 @@ int CAdminControl::CrossJudge(CShape* startS, CVertex* startV, float x, float y)
         G4 = Gaiseki(Vector(g1, g2), Vector(g1, s2));
 
         if (G1 * G2 <= 0 && G3 * G4 <= 0) {
-            result = 1;
+            result = true;
         }
     }
 
@@ -146,9 +160,9 @@ int CAdminControl::CrossJudge(CShape* startS, CVertex* startV, float x, float y)
 }
 
 //他交差（特殊）の判定関数
-int CAdminControl::CrossJudge2(CShape* startS, CVertex* startV, float x, float y)
+bool CAdminControl::CrossJudge2(CShape* startS, CVertex* startV, float x, float y)
 {
-    int result = 0;
+    bool result = false;
     CVertex* nowV = startV;
     CVertex* s1;//判定対称の線分の始点
     CVertex* s2;//判定対称の線分の終点
@@ -179,7 +193,7 @@ int CAdminControl::CrossJudge2(CShape* startS, CVertex* startV, float x, float y
             G4 = Gaiseki(Vector(g1, g2), Vector(g1, s2));
 
             if (G1 * G2 <= 0 && G3 * G4 <= 0) {
-                result = 1;
+                result = true;
             }
         }
     }
@@ -189,7 +203,7 @@ int CAdminControl::CrossJudge2(CShape* startS, CVertex* startV, float x, float y
 }
 
 //打った点が内包しているかの判定関数
-int CAdminControl::NaihouJudge(CShape* startS, CVertex* startV, float x, float y)
+bool CAdminControl::NaihouJudge(CShape* startS, CVertex* startV, float x, float y)
 {
 
     CVertex* nowV = startV;
@@ -203,30 +217,31 @@ int CAdminControl::NaihouJudge(CShape* startS, CVertex* startV, float x, float y
     for (CShape* sp = startS->GetNextS(); sp != NULL; sp = sp->GetNextS()) {
 
         //vertex_headから打った点を見ていく
-        for (CVertex* vp = sp->GetV(); vp->GetNext() != NULL; vp = vp->GetNext()) {
+        for (CVertex* vp = sp->GetV(); vp != NULL; vp = vp->GetNext()) {
             g1 = vp;
-            g2 = vp->GetNext();
-            float gaiseki = Gaiseki(Vector(s1, g1), Vector(s2, g2));
-            if (gaiseki < 0) {
-                gaiseki *= -1;
+            if (vp->GetNext() != NULL) {
+                g2 = vp->GetNext();
             }
-            float naiseki = Naiseki(Vector(s1, g1), Vector(s2, g2));
-            sum += atan2(gaiseki, naiseki);
+            else {
+                g2 = sp->GetV();
+            }
+
+            //2線分のなす角の総和
+            sum += Kakudo(Vector(s1, g1), Vector(s2, g2));
         }
 
-        //内包していれば、1を返す
+        //内包していれば、trueを返す
         if (sum - (2 * PI) < 0.01 && sum - (2 * PI) > -0.01) {
-            return 1;
+            return true;
         }
         sum = 0;
     }
 
-    return 0;
-
+    return false;
 }
 
 //作成しようとしている図形の中に図形があるかの判定関数
-int CAdminControl::GaihouJudge(CShape* startS, CVertex* startV, float x, float y)
+bool CAdminControl::GaihouJudge(CShape* startS, CVertex* startV, float x, float y)
 {
     CVertex* nowV = new CVertex(x, y);
     CVertex* s1;//線分1の始点
@@ -257,18 +272,20 @@ int CAdminControl::GaihouJudge(CShape* startS, CVertex* startV, float x, float y
                     gaiseki *= -1;
                 }
                 float naiseki = Naiseki(Vector(s1, g1), Vector(s2, g2));
+
+                //2線分のなす角の総和
                 sum += atan2(gaiseki, naiseki);
 
             }
-            //中の点が内包していれば、1を返す
-            if (sum - (2 * PI) < 0.1 && sum - (2 * PI) > -0.1) {
-                return 1;
+            //中の点が内包していれば、trueを返す
+            if (sum - (2 * PI) < 0.01 && sum - (2 * PI) > -0.01) {
+                return true;
             }
             sum = 0;
         }
     }
 
-    return 0;
+    return false;
 }
 
 
@@ -297,10 +314,25 @@ float CAdminControl::Naiseki(CVertex* a, CVertex* b)
     return result;
 }
 
-//ある直線に対し、2点が分断されているか判定する
-int CAdminControl::BundanJudge(CVertex* a, CVertex* b, CVertex* c, CVertex* d)
+float CAdminControl::Kakudo(CVertex* a, CVertex* b)
 {
-    int result = 0;
+    float result;
+    float gaiseki = Gaiseki(a, b);
+    float naiseki = Naiseki(a, b);
+
+    /*if (gaiseki < 0) {
+        gaiseki = gaiseki * -1;
+    }*/
+
+    result = atan2(gaiseki, naiseki);
+
+    return result;
+}
+
+//ある直線に対し、2点が分断されているか判定する
+bool CAdminControl::BundanJudge(CVertex* a, CVertex* b, CVertex* c, CVertex* d)
+{
+    int result = false;
     float s;
     float t;
 
@@ -308,7 +340,7 @@ int CAdminControl::BundanJudge(CVertex* a, CVertex* b, CVertex* c, CVertex* d)
     t = (b->GetX() - a->GetX()) * (d->GetY() - a->GetY()) - (d->GetX() - a->GetX()) * (b->GetY() - a->GetY());
 
     if (s * t < 0) {
-        result = 1;
+        result = true;
     }
 
     return result;
@@ -336,15 +368,15 @@ void CAdminControl::CreateShape(float x, float y)
         }
         //4点目以降の時閉じるか判定
         else if (Distance(shape_head->GetV(), x, y) <= 0.1) {
-            if (CrossJudge(shape_head, shape_head->GetV()->GetNext(), shape_head->GetV()->GetX(), shape_head->GetV()->GetY()) != 1) {
+            if (CrossJudge(shape_head, shape_head->GetV()->GetNext(), shape_head->GetV()->GetX(), shape_head->GetV()->GetY()) != true) {
                 shape_head->AddVertex(shape_head->GetV()->GetX(), shape_head->GetV()->GetY());
                 AddShape();
                 ShapeCloseFlag = true;
-            }else if (CrossJudge(shape_head, shape_head->GetV(), x, y) != 1) {
+            }else if (CrossJudge(shape_head, shape_head->GetV(), x, y) != true) {
                 shape_head->AddVertex(x, y);
             }
         }//交差判定
-        else if (CrossJudge(shape_head, shape_head->GetV(), x, y) == 1) {
+        else if (CrossJudge(shape_head, shape_head->GetV(), x, y) == true) {
             //なにもしない
         }//閉じてなくて交差してなければそのまま追加
         else {
@@ -352,8 +384,9 @@ void CAdminControl::CreateShape(float x, float y)
         }
     }
     //図形が2つ目以降の時
-    else if (NaihouJudge(shape_head, shape_head->GetV(), x, y) == 1) {
+    else if (NaihouJudge(shape_head, shape_head->GetV(), x, y) == true) {
         //内包していれば何もしない
+        ShapeCloseFlag = true;
     }
     //1点目は
     else if (shape_head->CountVertex() < 1) {
@@ -362,7 +395,7 @@ void CAdminControl::CreateShape(float x, float y)
     //2,3点目は
     else if (shape_head->CountVertex() < 3) {
         //交差判定(特殊)
-        if (CrossJudge2(shape_head, shape_head->GetV(), x, y) == 1) {
+        if (CrossJudge2(shape_head, shape_head->GetV(), x, y) == true) {
             //交差してたらなにもしない
         }//閉じてなくて交差してなければそのまま追加
         else {
@@ -371,19 +404,19 @@ void CAdminControl::CreateShape(float x, float y)
     }
     //4点目以降の時閉じるか判定
     else if (Distance(shape_head->GetV(), x, y) <= 0.1) {
-        if (CrossJudge(shape_head, shape_head->GetV()->GetNext(), shape_head->GetV()->GetX(), shape_head->GetV()->GetY()) == 1) {
+        if (CrossJudge(shape_head, shape_head->GetV()->GetNext(), shape_head->GetV()->GetX(), shape_head->GetV()->GetY()) == true) {
             //自交差してなければ打つ
-            if (CrossJudge(shape_head, shape_head->GetV(), x, y) != 1) {
+            if (CrossJudge(shape_head, shape_head->GetV(), x, y) != true) {
                 shape_head->AddVertex(x, y);
             }
         }//外包していれば
-        else if (GaihouJudge(shape_head, shape_head->GetV(), x, y) != 1) {
+        else if (GaihouJudge(shape_head, shape_head->GetV(), x, y) != true) {
             shape_head->AddVertex(shape_head->GetV()->GetX(), shape_head->GetV()->GetY());
             AddShape();
             ShapeCloseFlag = true;
         }
     }//交差判定
-    else if (CrossJudge(shape_head, shape_head->GetV(), x, y) == 1) {
+    else if (CrossJudge(shape_head, shape_head->GetV(), x, y) == true) {
         //なにもしない
     }//閉じてなくて交差してなければそのまま追加
     else {
@@ -410,15 +443,17 @@ void CAdminControl::DrawAxis()
     glEnd();
 }
 
-//頂点・稜線・形状を選択すると色が変わる
-void CAdminControl::SelectVertex(float x, float y)
+//選択した点の色を変える（実際に色を変えるのはDraw()内）
+int CAdminControl::SelectVertex(float x, float y)
 {
+    int c = 0;
 
     //各図形と各点を見ていく
     //図形は今のshape_head以外、点は始点以外を見る
     for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
-        for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
-            if (Distance(nowV, x, y) <= 0.1) {
+        for (CVertex* nowV = nowS->GetV()->GetNext(); nowV != NULL; nowV = nowV->GetNext()) {
+            if (Distance(nowV, x, y) <= 0.05) {
+                c++;
                 if (nowV->GetSelectVertexFlag() == false) {
                     NotSelectFlagReset();
                     nowV->SetSelectVertexFlag(true);
@@ -429,18 +464,178 @@ void CAdminControl::SelectVertex(float x, float y)
             }
         }
     }
+
+    if (c > 0) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
 }
 
+//被選択のフラグをリセットする関数
 void CAdminControl::NotSelectFlagReset()
 {
+
+    CVertex* g1;
+    CVertex* g2;
+
     //各図形と各点を見ていく
     for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        nowS->SetSelectShapeFlag(false);
         for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
-            nowV->SetSelectVertexFlag(false);//フラグを0に
+            nowV->SetSelectVertexFlag(false);
+            nowV->SetSelectLineFlag(false);
         }
     }
 }
 
+//選択した形状の色を変える関数（実際に色を変えるのはDraw()内）
+void CAdminControl::SelectShape(float x, float y)
+{
+   //今のshape_head以外の各図形を見ていく
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+            if (NaihouMiniJudge(nowS, x, y) == true) {
+                if (nowS->GetSelectShapeFlag() == false) {
+                    NotSelectFlagReset();
+                    nowS->SetSelectShapeFlag(true);
+                }
+                else {
+                    nowS->SetSelectShapeFlag(false);
+                }
+            }
+    }
+}
+
+//打った点が内包しているかの判定関数（引数に与えたshape_headしか見ない）
+bool CAdminControl::NaihouMiniJudge(CShape* nowS, float x, float y)
+{
+    CVertex* s1 = new CVertex(x, y);//線分1の始点
+    CVertex* g1;//線分1の終点
+    CVertex* s2 = new CVertex(x, y);;//線分2の始点
+    CVertex* g2;//線分2の終点
+    float sum = 0;
+
+        //vertex_headから打った点を見ていく
+        for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+            g1 = nowV;
+            if (nowV->GetNext() != NULL) {
+                g2 = nowV->GetNext();
+            }
+            else {
+                g2 = nowS->GetV();
+            }
+
+            //2線分のなす角の総和
+            sum += Kakudo(Vector(s1, g1), Vector(s2, g2));
+        }
+
+        //内包していれば、trueを返す
+        if (sum - (2 * PI) < 0.01 && sum - (2 * PI) > -0.01) {
+            return true;
+        }
+        sum = 0;
+
+    return false;
+}
+
+//形状内を塗りつぶす関数
+void CAdminControl::DrawShape(CShape* nowS)
+{
+    glBegin(GL_TRIANGLE_FAN);
+    glColor3f(0.8, 0.8, 0.8); //淡いグレー
+
+    for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+        glVertex2f(nowV->GetX(), nowV->GetY());
+    }
+
+    glEnd();
+}
+
+
+//選択した辺の色を変える関数（実際に色を変えるのはDraw()内）
+int CAdminControl::SelectLine(float x, float y)
+{
+    int c = 0;
+    CVertex* vp = new CVertex(x, y); //打った点
+    CVertex* vp1;
+    CVertex* vp2;
+    float d1, d2;
+
+    //各図形と各点を見ていく
+    //図形は今のshape_head以外、点は始点から終点を見る
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+
+        for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+            vp1 = nowV;
+            if (nowV->GetNext() != NULL) {
+                vp2 = nowV->GetNext();
+            }
+            else {
+                vp2 = nowS->GetV();
+            }
+
+            //打った点と、各辺の両端の角度の総和を求める
+            d1 = Kakudo(Vector(vp1, vp2), Vector(vp1, vp));
+            d2 = Kakudo(Vector(vp2, vp1), Vector(vp2, vp));
+            if (d1 < 0) {
+                d1 = d1 * (-1);
+            }
+            if (d2 < 0) {
+                d2 = d2 * (-1);
+            }
+
+            if (d1 <= (PI / 2) && d2 <= (PI / 2)) {
+                if (VtoL_Distance(vp1, vp2, vp) <= 0.03) {
+                    c++;
+                    if (nowV->GetSelectLineFlag() == false) {
+                        NotSelectFlagReset();
+                        nowV->SetSelectLineFlag(true);
+                    }
+                    else {
+                        nowV->SetSelectLineFlag(false);
+                    }
+                }
+            }
+        }
+
+    }
+
+    if (c > 0) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+//点と線の距離を求め返却する関数
+float CAdminControl::VtoL_Distance(CVertex* vp1, CVertex* vp2, CVertex* vp)
+{   
+    float X, Y;
+    float A, B; //ベクトルの大きさ
+    float gaiseki, d;
+
+    X = vp2->GetX() - vp1->GetX();
+    Y = vp2->GetY() - vp1->GetY();
+    A = sqrt(pow(X, 2) + pow(Y, 2));
+
+    X = vp->GetX() - vp1->GetX();
+    Y = vp->GetY() - vp1->GetY();
+    B = sqrt(pow(X, 2) + pow(Y, 2));
+
+    gaiseki = Gaiseki(Vector(vp1,vp2), Vector(vp1, vp));
+    if (gaiseki < 0) {
+        gaiseki = gaiseki * (-1);
+    }
+
+    d = B * (gaiseki / (A * B));
+
+    return d;
+
+}
+
+//描画した図形たちが閉じているかのフラグを取得する関数
 bool CAdminControl::GetShapeCloseFlag()
 {
     return ShapeCloseFlag;

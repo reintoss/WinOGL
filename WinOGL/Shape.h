@@ -16,6 +16,8 @@ private:
 	//次の形状リストを指すポインタ
 	CShape* next_shape = NULL;
 
+	bool SelectShapeFlag = false;
+
 public:
 
 	//頂点のX・Y座標の両方を書き込む
@@ -33,6 +35,10 @@ public:
 
 	CVertex* AddVertex(float x, float y);
 	int CountVertex();
+
+	// 各形状のフラグをセット・取得する関数
+	void SetSelectShapeFlag(bool f);
+	bool GetSelectShapeFlag();
 
 };
 
