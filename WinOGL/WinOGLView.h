@@ -54,6 +54,7 @@ public:
 private:
 	double clickX;
 	double clickY;
+
 public:
 	afx_msg void OnXyz();
 	afx_msg void OnUpdateXyz(CCmdUI* pCmdUI);

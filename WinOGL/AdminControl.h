@@ -29,10 +29,10 @@ public:
 	bool CrossJudge2(CShape* startS, CVertex* startV, float x, float y);
 
 	//打った点が内包しているかの判定関数
-	bool NaihouJudge(CShape* startS, CVertex* startV, float x, float y);
+	bool NaihouJudge(CShape* startS, float x, float y);
 
 	//作成しようとしている図形の中に図形があるかの判定関数
-	bool GaihouJudge(CShape* startS, CVertex* startV, float x, float y);
+	bool GaihouJudge(CShape* startS, float x, float y);
 
 	//ある直線に対し、2点が分断されているか判定する
 	bool BundanJudge(CVertex* a, CVertex* b, CVertex* c, CVertex* d);
@@ -75,11 +75,18 @@ public:
 
 	//選択した形状の色を変える関数（実際に色を変えるのはDraw()内）
 	void SelectShape(float x, float y);
-	//打った点が内包しているかの判定関数（引数に与えたshape_headしか見ない）
-	bool NaihouMiniJudge(CShape* nowS, float x, float y);
+	//打った点が内包しているかの判定関数(引数に与えたShapeのみ見る)
+	bool NaihouJudge2(CShape* nowS, float x, float y);
 	//形状内を塗りつぶす関数
 	void DrawShape(CShape* nowS);
-
+	//三角形が図形の外かどうかを判定する
+	bool ShapeInJudge(CShape* startS, CVertex* a, CVertex* b, CVertex* c);
+	//描画する三角形の辺が、他の辺と交差するか判定する
+	bool CrossJudge3(CShape* startS, CVertex* a, CVertex* b, CVertex* c);
+	//与えられた2つの点が同じかどうかを判定する
+	bool SameVertexJudge(CVertex* a, CVertex* b);
+	//三角形の中に点が内包しているかの判定関数
+	bool NaihouJudge3(CShape* nowS, CVertex* a, CVertex* b, CVertex* c);
 
 	//選択した辺の色を変える関数（実際に色を変えるのはDraw()内）
 	int SelectLine(float x, float y);
