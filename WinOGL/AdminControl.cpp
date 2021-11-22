@@ -202,7 +202,7 @@ bool CAdminControl::CrossJudge2(CShape* startS, CVertex* startV, float x, float 
     return result;
 }
 
-//打った点が内包しているかの判定関数(内包していればfalseを返す)
+//打った点が内包しているかの判定関数(内包していればtrueを返す)
 bool CAdminControl::NaihouJudge(CShape* startS, float x, float y)
 {
 
@@ -233,7 +233,7 @@ bool CAdminControl::NaihouJudge(CShape* startS, float x, float y)
 
 }
 
-//作成しようとしている図形の中に図形があるかの判定関数
+//作成しようとしている図形の中に図形があるかの判定関数(外包していればtrueを返す)
 bool CAdminControl::GaihouJudge(CShape* startS, float x, float y)
 {
     CVertex* nowV = startS->GetV();
@@ -247,7 +247,7 @@ bool CAdminControl::GaihouJudge(CShape* startS, float x, float y)
     //外側の図形以外を見ていく
     for (CShape* sp = startS->GetNextS(); sp != NULL; sp = sp->GetNextS()) {
         c = 0;
-        //中の図形の点を見ていく
+        //図形の点を見ていく
         for (CVertex* vp = sp->GetV(); vp != NULL; vp = vp->GetNext()) {
             sum = 0;
             Q = new CVertex(vp->GetX(), vp->GetY());
@@ -441,10 +441,10 @@ int CAdminControl::SelectVertex(float x, float y)
     for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
         for (CVertex* nowV = nowS->GetV()->GetNext(); nowV != NULL; nowV = nowV->GetNext()) {
             if (Distance(nowV, x, y) <= 0.05) {
-                c++;
                 if (nowV->GetSelectVertexFlag() == false) {
                     NotSelectFlagReset();
                     nowV->SetSelectVertexFlag(true);
+                    c = 1;
                 }
                 else {
                     nowV->SetSelectVertexFlag(false);
@@ -452,13 +452,8 @@ int CAdminControl::SelectVertex(float x, float y)
             }
         }
     }
+        return c;
 
-    if (c > 0) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
 }
 
 //被選択のフラグをリセットする関数
@@ -519,43 +514,66 @@ bool CAdminControl::NaihouJudge2(CShape* nowS, float x, float y)
             return true;
         }
 
-    return false;
 }
 
 //形状内を塗りつぶす関数
 void CAdminControl::DrawShape(CShape* nowS)
 {
 
-    //内部を塗りつぶす（実装中）
+    /*
+    //内部を塗りつぶす
     glBegin(GL_TRIANGLES);
     glColor3f(0.8, 0.8, 0.8); //淡いグレー
 
+    int v1c = 0;
+    int v2c = 0;
+    int v3c = 0;
+    int f = 0;
+    CombinationFlag = false;
+
     for (CVertex* v1 = nowS->GetV(); v1->GetNext() != NULL; v1 = v1->GetNext()) {
+        v1c++;
+        v2c = 0;
+        v3c = 0;
         for (CVertex* v2 = nowS->GetV(); v2->GetNext() != NULL; v2 = v2->GetNext()) {
+            v2c++;
+            v3c = 0;
             if (SameVertexJudge(v1, v2) == false) {
                 for (CVertex* v3 = nowS->GetV(); v3->GetNext() != NULL; v3 = v3->GetNext()) {
+                    v3c++;
                     if (SameVertexJudge(v1, v3) == false && SameVertexJudge(v2, v3) == false) {
-                        if (NaihouJudge3(nowS, v1, v2, v3) == false) { //三角形の中に図形の点がない
-                            if (CrossJudge3(nowS, v1, v2, v3) == false) { //三角形が図形の辺と交差しない
-                                if (ShapeInJudge(nowS, v1, v2, v3) == true) { //三角形の重心が図形の中にある
-                                    glVertex2f(v1->GetX(), v1->GetY());
-                                    glVertex2f(v2->GetX(), v2->GetY());
-                                    glVertex2f(v3->GetX(), v3->GetY());
+                        //if (CombinationJudge(nowS, v1c, v2c, v3c, f) == true) { //3点の組み合わせが既出でない
+                            f = 1;
+                            if (NaihouJudge3(nowS, v1, v2, v3) == false) { //三角形の中に図形の点がない
+                                if (CrossJudge3(nowS, v1, v2, v3) == false) { //三角形が図形の辺と交差しない
+                                    if (ShapeInJudge(nowS, v1, v2, v3) == true) { //三角形の重心が図形の中にある
+                                        glVertex2f(v1->GetX(), v1->GetY());
+                                        glVertex2f(v2->GetX(), v2->GetY());
+                                        glVertex2f(v3->GetX(), v3->GetY());
+                                        if (CombinationFlag == true) {
+                                            break;
+                                        }
+                                    }
                                 }
                             }
-                        }
+                        //}
                     }
+                }
+                if (CombinationFlag == true) {
+                    break;
                 }
             }
         }
-
+        if (CombinationFlag == true) {
+            break;
+        }
     }
 
     glEnd();
-
+    */
 
     //点と線を全て色変え
-    /*glColor3f(0, 1.0, 1.0); //シアン
+    glColor3f(0, 1.0, 1.0); //シアン
     glPointSize(10);
     glBegin(GL_POINTS); //点
     for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
@@ -569,7 +587,7 @@ void CAdminControl::DrawShape(CShape* nowS)
     for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
         glVertex2f(nowV->GetX(), nowV->GetY());
     }
-    glEnd(); */
+    glEnd();
 }
 
 //三角形が図形の外かどうかを判定する(外ならfalse)
@@ -680,6 +698,88 @@ bool CAdminControl::NaihouJudge3(CShape* nowS, CVertex* a, CVertex* b, CVertex* 
     return false;
 }
 
+//3点の組み合わせ判定関数(既出でなければtrue)
+bool CAdminControl::CombinationJudge(CShape* nowS, int a, int b, int c, int f)
+{
+
+    int tmp = 0;
+    int ans;
+
+    //初回のみ配列初期化
+    if (f == 0) {
+        for (int i = 0; i < 1140; i++) {
+            d[i] = 0;
+        }
+    }
+
+    //昇順にする
+    if (a > b) {
+        tmp = a;
+        a = b;
+        b = tmp;
+    }
+    if (b > c) {
+        tmp = b;
+        b = c;
+        c = tmp;
+    }
+    if (a > b) {
+        tmp = a;
+        a = b;
+        b = tmp;
+    }
+
+    //素数の一意性により、3つの整数に対応した数字が得られる
+    ans = pow(5, a) + pow(3, b) + pow(2, c);
+
+    //配列内探索
+    for (int i = 0; i < 1140; i++) {
+        if (d[i] == 0) {
+            tmp = i;
+            break;
+        }
+        if (d[i] == ans) {
+            return false;
+        }
+    }
+
+    d[tmp] = ans;
+
+    int v = Combination(nowS->CountVertex() - 1, 3);
+    //配列の中がnC3個の時、今後CombinationJudge()は行わないようにする
+    if (v == tmp + 1) {
+        CombinationFlag = true;
+    }
+
+    return true;
+}
+
+//nC3を求める関数
+int CAdminControl::Combination(int n, int r)
+{
+
+    int ans;
+    int i;
+
+    ans = 1;
+
+    for (i = 0; i < r; i++)
+    {
+        ans *= n;
+        n -= 1;
+    }
+
+    for (i = 1; i <= r; i++)
+    {
+        ans /= i;
+    }
+
+    return ans;
+
+}
+
+
+
 //選択した辺の色を変える関数（実際に色を変えるのはDraw()内）
 int CAdminControl::SelectLine(float x, float y)
 {
@@ -766,4 +866,229 @@ float CAdminControl::VtoL_Distance(CVertex* vp1, CVertex* vp2, CVertex* vp)
 bool CAdminControl::GetShapeCloseFlag()
 {
     return ShapeCloseFlag;
+}
+
+//マウスがムーブした場所に点を描画
+void CAdminControl::DrawMoveVertex(float x, float y, float mx, float my)
+{
+
+    if (MoveNowJudge == false) {
+        for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+            for (CVertex* nowV = nowS->GetV()->GetNext(); nowV != NULL; nowV = nowV->GetNext()) {
+                if (Distance(nowV, x, y) <= 0.05) {
+                    if (nowV->GetSelectVertexFlag() == true) {
+                        HoldV = nowV;
+                        HoldS = nowS;
+                        originX = nowV->GetX();
+                        originY = nowV->GetY();
+                        AlreadySelectVertexFlag = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    //もし選択済みの点がクリックされ、ホールドされてたら
+    if (AlreadySelectVertexFlag == true) {
+        MoveNowJudge = true;
+        //始点もしくは終点を選んだ場合
+        if (HoldV->GetVNumber() == HoldS->CountVertex()) {
+            HoldS->GetV()->SetXY(mx, my);
+            HoldV->SetXY(mx, my);
+        }//始点終点以外を選んだ場合
+        else {
+            HoldV->SetXY(mx, my);
+        }
+    }
+
+}
+
+//今マウスが動いているかどうかを取得する関数
+bool CAdminControl::GetMoveNowJudge()
+{
+    return MoveNowJudge;
+
+}
+
+//MoveNowJudgeをfalseにする関数
+void CAdminControl::ResetMoveNowJudge()
+{
+    MoveNowJudge = false;
+}
+
+//ホールドしてる点をリセットする関数
+void CAdminControl::ResetHoldV()
+{
+    HoldV = NULL;
+}
+
+//ホールドしてる点があるShapeをリセットする関数
+void CAdminControl::ResetHoldS()
+{
+    HoldS = NULL;
+}
+
+//点移動時の選択判定のフラグをリセットする関数
+void CAdminControl::ResetAlreadySelectVertexFlag()
+{
+    AlreadySelectVertexFlag = false;
+}
+
+//移動させた点によって交差する箇所があるか
+bool CAdminControl::VMoveCrossJudge()
+{
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        for (CVertex* nowV = nowS->GetV()->GetNext(); nowV != NULL; nowV = nowV->GetNext()) {
+            if (HoldS != nowS) {
+                //移動させた点が他のShapeの中にないか判定
+                if (NaihouJudge2(nowS, HoldV->GetX(), HoldV->GetY()) == true) {
+                    return false;
+                }
+                //点が移動させたことによって、Shapeの中に他のShapeがないか判定
+                if (GaihouJudge2(nowS, HoldS) == true) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    //交差判定
+    CVertex* preV = HoldS->GetV();
+    for (CVertex* vp = HoldS->GetV()->GetNext(); vp != NULL; vp = vp->GetNext()) {
+        if (vp == HoldV) {
+            if (CrossJudge4(preV) == true) {
+                return false;
+            }
+            if (HoldV->GetNext() != NULL) {
+                if (CrossJudge4(HoldV->GetNext()) == true) {
+                    return false;
+                }
+            }
+            else {
+                if (CrossJudge4(HoldS->GetV()->GetNext()) == true) {
+                    return false;
+                }
+            }
+        }
+        preV = vp;
+    }
+
+    return true;
+}
+
+//図形の中に図形があるか(外包していればtrueを返す)
+bool CAdminControl::GaihouJudge2(CShape* nowS, CShape* HoldS)
+{
+    CVertex* nowV = HoldS->GetV();
+    CVertex* outV_N = NULL;
+    CVertex* Q;
+    float sum = 0;
+    int c = 0;
+
+    //外側ではない図形の点を見ていく
+    for (CVertex* vp = nowS->GetV(); vp != NULL; vp = vp->GetNext()) {
+        sum = 0;
+        Q = new CVertex(vp->GetX(), vp->GetY());
+
+        //外側の図形の点を見ていく
+        for (CVertex* outvp = HoldS->GetV(); outvp->GetNext() != NULL; outvp = outvp->GetNext()) {
+            //g1 = outvp;
+
+            outV_N = outvp->GetNext();
+
+            //2線分のなす角の総和
+            sum = sum + Kakudo(Vector(Q, outvp), Vector(Q, outvp->GetNext()));
+
+        }
+        sum = sum + Kakudo(Vector(Q, outV_N), Vector(Q, nowV));
+
+        if (sum > 0.001 || sum < -0.001) {//内包している場合
+            c++;
+        }
+    }
+    if (c == nowS->CountVertex()) {
+        return true;
+    }
+
+    return false;
+}
+
+//与えた辺が他の辺と交差するか判定する(交差していればtrueを返す)
+bool CAdminControl::CrossJudge4(CVertex* vp)
+{
+    CShape* nowS = shape_head;
+    CVertex* s1 = HoldV;
+    CVertex* s2;
+    CVertex* g1 = vp;
+    CVertex* g2;
+    float G1;
+    float G2;
+    float G3;
+    float G4;
+
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        //他交差
+        if (nowS != HoldS) {
+            for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+                if (nowV->GetNext() != NULL) {
+                    s2 = nowV;
+                    g2 = nowV->GetNext();
+                }
+                else {
+                    s2 = nowV;
+                    g2 = nowS->GetV();
+                }
+                G1 = Gaiseki(Vector(s1, g1), Vector(s1, s2));
+                G2 = Gaiseki(Vector(s1, g1), Vector(s1, g2));
+                G3 = Gaiseki(Vector(s2, g2), Vector(s2, s1));
+                G4 = Gaiseki(Vector(s2, g2), Vector(s2, g1));
+
+                if (G1 * G2 <= 0 && G3 * G4 <= 0) {
+                    return true;
+                }
+            }
+        }
+        else { //自交差
+            for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+
+                s2 = nowV;
+                g2 = nowV->GetNext();
+
+                G1 = Gaiseki(Vector(s1, g1), Vector(s1, s2));
+                G2 = Gaiseki(Vector(s1, g1), Vector(s1, g2));
+                G3 = Gaiseki(Vector(s2, g2), Vector(s2, s1));
+                G4 = Gaiseki(Vector(s2, g2), Vector(s2, g1));
+
+                if (SameVertexJudge(s2, g1) == false && SameVertexJudge(g2, s1) == false) { //比較線が同じ線かどうか
+                    if (SameVertexJudge(s1, s2) == false) { //比較線が次の線かどうか
+                        if (SameVertexJudge(g1, g2) == false) { //比較線が前の線かどうか
+                            if (G1 * G2 <= 0 && G3 * G4 <= 0) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                else {
+
+                }
+
+            }
+        }
+    }
+
+    return false;
+}
+
+//移動させた点によって交差していた場合、点を元に戻す関数
+void CAdminControl::VMoveCancel()
+{
+    //始点もしくは終点を選んだ場合
+    if (HoldV->GetVNumber() == HoldS->CountVertex()) {
+        HoldS->GetV()->SetXY(originX, originY);
+        HoldV->SetXY(originX, originY);
+    }//始点終点以外を選んだ場合
+    else {
+        HoldV->SetXY(originX, originY);
+    }
 }

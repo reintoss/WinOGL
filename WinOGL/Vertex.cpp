@@ -69,6 +69,7 @@ CVertex* CVertex::GetPre()
 	return pre_vertex;
 }
 
+// 各点のフラグをセットする関数
 void CVertex::SetSelectVertexFlag(bool f)
 {
 	if (f == true) {
@@ -79,11 +80,13 @@ void CVertex::SetSelectVertexFlag(bool f)
 	}
 }
 
+// 各点のフラグを取得する関数
 bool CVertex::GetSelectVertexFlag()
 {
 	return SelectVertexFlag;
 }
 
+// 各線のフラグをセットする関数
 void CVertex::SetSelectLineFlag(bool f)
 {
 	if (f == true) {
@@ -94,10 +97,24 @@ void CVertex::SetSelectLineFlag(bool f)
 	}
 }
 
+// 各線のフラグを取得する関数
 bool CVertex::GetSelectLineFlag()
 {
 	return SelectLineFlag;
 }
+
+// 各点のナンバーをセットする関数
+void CVertex::SetVNumber(int n)
+{
+	VNumber = n;
+}
+
+// 各点のナンバーを取得する関数
+int CVertex::GetVNumber()
+{
+	return VNumber;
+}
+
 
 void CVertex::FreeVertex()
 {

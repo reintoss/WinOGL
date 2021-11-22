@@ -5,6 +5,8 @@
 #pragma once
 #include <gl/GL.h>
 #include "AdminControl.h"
+#include "Vertex.h"
+
 
 class CWinOGLView : public CView
 {
@@ -43,6 +45,7 @@ public:
 private:
 	HGLRC m_hRC;
 	CAdminControl AC; //問8.1
+	CVertex V;
 
 
 public:
@@ -52,14 +55,21 @@ public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 
 private:
-	double clickX;
-	double clickY;
+	double clickX = 0;
+	double clickY = 0;
+
+	double clickX_m = 0;
+	double clickY_m = 0;
+
+	bool LButtonDownFlag = false;
 
 public:
 	afx_msg void OnXyz();
 	afx_msg void OnUpdateXyz(CCmdUI* pCmdUI);
 	afx_msg void OnEditSelect();
 	afx_msg void OnUpdateEditSelect(CCmdUI* pCmdUI);
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン

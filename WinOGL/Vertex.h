@@ -12,10 +12,13 @@ private:
 	//　頂点のY座標
 	float y;
 
+	float xy[2];
+
+
 	bool SelectVertexFlag = false;
 	bool SelectLineFlag = false;
 
-	float xy[2];
+	int VNumber = 1;
 
 	//　次の頂点リストを指すポインタ
 	CVertex* next_vertex = NULL;
@@ -49,6 +52,10 @@ public:
 	// 各線のフラグをセット・取得する関数
 	void SetSelectLineFlag(bool f);
 	bool GetSelectLineFlag();
+
+	// 各点のナンバーをセット・取得する関数
+	void SetVNumber(int n);
+	int GetVNumber();
 
 	void FreeVertex();
 };

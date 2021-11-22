@@ -74,6 +74,8 @@ CVertex* CShape::AddVertex(float x, float y)
         //ÅŒã”ö‚ÌŸ‚É’Ç‰Á‚·‚é
         nowV->SetNext(newVertex);
         nowV->GetNext()->SetPre(nowV);
+        nowV->GetNext()->SetVNumber(nowV->GetVNumber() + 1);
+
     }
     else
     {

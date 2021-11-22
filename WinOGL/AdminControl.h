@@ -4,7 +4,7 @@
 #include "Vertex.h"
 #include "Shape.h"
 
-class CAdminControl{
+class CAdminControl {
 
 public:
 	CAdminControl();
@@ -87,6 +87,14 @@ public:
 	bool SameVertexJudge(CVertex* a, CVertex* b);
 	//三角形の中に点が内包しているかの判定関数
 	bool NaihouJudge3(CShape* nowS, CVertex* a, CVertex* b, CVertex* c);
+	//3点の組み合わせ判定関数
+	bool CombinationJudge(CShape* nowS, int a, int b, int c, int f);
+	//nC3を求める関数
+	int Combination(int n, int r);
+	//Combination()をこれ以上行うかのフラグ
+	bool CombinationFlag = false;
+
+	int d[1140] = { 0 };
 
 	//選択した辺の色を変える関数（実際に色を変えるのはDraw()内）
 	int SelectLine(float x, float y);
@@ -100,6 +108,38 @@ public:
 	bool ShapeCloseFlag = false;
 	//ShapeCloseFlagを取得する関数（WinOGLView.cppで使うために関数にする）
 	bool GetShapeCloseFlag();
+
+	//マウスがムーブした場所に点を描画する関数
+	void DrawMoveVertex(float x, float y, float mx, float my);
+	//今マウスが動いているかどうか
+	bool MoveNowJudge = false;
+	//今マウスが動いているかどうかを取得する関数
+	bool GetMoveNowJudge();
+	//MoveNowJudgeをfalseにする関数
+	void ResetMoveNowJudge();
+	//ホールドしている点
+	CVertex* HoldV = NULL;
+	//ホールドしている点をリセットする関数
+	void ResetHoldV();
+	//ホールドしてる点があるShape
+	CShape* HoldS = NULL;
+	//ホールドしてる点があるShapeをリセットする関数
+	void ResetHoldS();
+	//点移動前の座標
+	float originX = 0;
+	float originY = 0;
+	//点が選択済みかどうか
+	bool AlreadySelectVertexFlag = false;
+	//点移動時の選択判定のフラグをリセットする関数
+	void ResetAlreadySelectVertexFlag();
+	//移動させた点によって交差する箇所があるか
+	bool VMoveCrossJudge();
+	//図形の中に図形があるか(与えたShapeのみ判定対象)
+	bool GaihouJudge2(CShape* nowS,CShape* HoldS);
+	//与えた辺が他の辺と交差するか判定する
+	bool CrossJudge4(CVertex* vp);
+	//移動させた点によって交差していた場合、点を元に戻す関数
+	void VMoveCancel();
 };
 
 
