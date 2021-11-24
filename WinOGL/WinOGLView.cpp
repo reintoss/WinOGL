@@ -36,6 +36,11 @@ BEGIN_MESSAGE_MAP(CWinOGLView, CView)
 //	ON_WM_RBUTTONDOWN()
 //	ON_WM_RBUTTONUP()
 	ON_WM_LBUTTONUP()
+	ON_WM_LBUTTONDBLCLK()
+	ON_COMMAND(ID_ALL_DELETE, &CWinOGLView::OnAllDelete)
+//	ON_UPDATE_COMMAND_UI(ID_ALL_DELETE, &CWinOGLView::OnUpdateAllDelete)
+ON_WM_RBUTTONDOWN()
+ON_UPDATE_COMMAND_UI(ID_ALL_DELETE, &CWinOGLView::OnUpdateAllDelete)
 END_MESSAGE_MAP()
 
 // CWinOGLView コンストラクション/デストラクション
@@ -168,6 +173,7 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 		}
 	}
 
+
 	LButtonDownFlag = false;
 	AC.ResetMoveNowJudge();
 	AC.ResetHoldV();
@@ -207,6 +213,63 @@ void CWinOGLView::OnMouseMove(UINT nFlags, CPoint point)
 	RedrawWindow();
 
 	CView::OnMouseMove(nFlags, point);
+}
+
+
+void CWinOGLView::OnLButtonDblClk(UINT nFlags, CPoint point)
+{
+
+	CRect rect;
+	GetClientRect(rect); // 描画領域の大きさを取得
+
+	clickX = (double)point.x / rect.Width(); //ex.1920を1とする
+	clickX = clickX * 2 - 1; //区間[0,1]を[-1,0,1]にする
+	if (rect.Width() > rect.Height()) { //横長の時
+		clickX = clickX * ((double)rect.Width() / rect.Height());
+	}
+
+	clickY = (double)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
+	clickY = clickY * 2 - 1; //区間[0,1]を[-1,0,1]にする
+	if (rect.Height() > rect.Width()) { //縦長の時
+		clickY = clickY * ((double)rect.Height() / rect.Width());
+	}
+
+	//編集ボタンが押されている場合のみ有効
+	if (AC.SelectButtonFlag == true) {
+		AC.InsertVertex(clickX, clickY);
+	}
+
+	RedrawWindow();
+
+	CView::OnLButtonDblClk(nFlags, point);
+}
+
+
+void CWinOGLView::OnRButtonDown(UINT nFlags, CPoint point)
+{
+	CRect rect;
+	GetClientRect(rect); // 描画領域の大きさを取得
+
+	clickX = (double)point.x / rect.Width(); //ex.1920を1とする
+	clickX = clickX * 2 - 1; //区間[0,1]を[-1,0,1]にする
+	if (rect.Width() > rect.Height()) { //横長の時
+		clickX = clickX * ((double)rect.Width() / rect.Height());
+	}
+
+	clickY = (double)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
+	clickY = clickY * 2 - 1; //区間[0,1]を[-1,0,1]にする
+	if (rect.Height() > rect.Width()) { //縦長の時
+		clickY = clickY * ((double)rect.Height() / rect.Width());
+	}
+
+	//編集ボタンが押されている場合のみ有効
+	if (AC.SelectButtonFlag == true) {
+		AC.DeleteVertex(clickX, clickY);
+	}
+
+	RedrawWindow();
+
+	CView::OnRButtonDown(nFlags, point);
 }
 
 
@@ -333,11 +396,35 @@ void CWinOGLView::OnEditSelect()
 	RedrawWindow();
 }
 
-
 void CWinOGLView::OnUpdateEditSelect(CCmdUI* pCmdUI)
 {
 	//SelectButtonFlagがtrueの時、ボタンが沈む
 	if (AC.SelectButtonFlag == true) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
+}
+
+
+void CWinOGLView::OnAllDelete()
+{
+
+	if (AC.AllDeleteButtonFlag == true) {
+		AC.AllDeleteButtonFlag = false;
+	}
+	else {
+		AC.AllDeleteButtonFlag = true;
+		AC.AllDelete();
+	}
+
+}
+
+
+void CWinOGLView::OnUpdateAllDelete(CCmdUI* pCmdUI)
+{
+	if (AC.AllDeleteButtonFlag == true) {
 		pCmdUI->SetCheck(true);
 	}
 	else {

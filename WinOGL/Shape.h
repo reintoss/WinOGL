@@ -25,6 +25,9 @@ public:
 
 	CVertex* GetV();
 
+	//vertex_headにNULLを書き込む
+	void SetV_NULL();
+
 	//次の形状リストを指すポインタを書き込む
 	CShape* SetNextS(CShape* new_nextS);
 

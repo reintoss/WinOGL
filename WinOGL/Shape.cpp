@@ -31,6 +31,12 @@ CVertex* CShape::GetV(){
 
 }
 
+//vertex_head‚ÉNULL‚ğ‘‚«‚Ş
+void CShape::SetV_NULL()
+{
+    vertex_head = NULL;
+}
+
 
 CShape* CShape::SetNextS(CShape* new_nextS){
 
@@ -74,8 +80,7 @@ CVertex* CShape::AddVertex(float x, float y)
         //ÅŒã”ö‚ÌŸ‚É’Ç‰Á‚·‚é
         nowV->SetNext(newVertex);
         nowV->GetNext()->SetPre(nowV);
-        nowV->GetNext()->SetVNumber(nowV->GetVNumber() + 1);
-
+        //nowV->GetNext()->SetVNumber(nowV->GetVNumber() + 1);
     }
     else
     {

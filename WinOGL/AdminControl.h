@@ -61,14 +61,20 @@ private:
 	CShape* shape_change = NULL;
 
 public:
+
+	/* ボタン系 */
 	//XYZボタンが押されているかどうかのフラグ
 	bool AxisFlag = false;
 	//XYZ軸を描画する関数
 	void DrawAxis();
 
-
 	//編集ボタンが押されているかどうかのフラグ
 	bool SelectButtonFlag = false;
+
+	//全削除する関数
+	void AllDelete();
+	//全削除ボタンが押されているかどうかのフラグ
+	bool AllDeleteButtonFlag = false;
 
 	//選択した点の色を変える関数（実際に色を変えるのはDraw()内）
 	int SelectVertex(float x, float y);
@@ -137,9 +143,18 @@ public:
 	//図形の中に図形があるか(与えたShapeのみ判定対象)
 	bool GaihouJudge2(CShape* nowS,CShape* HoldS);
 	//与えた辺が他の辺と交差するか判定する
-	bool CrossJudge4(CVertex* vp);
+	bool CrossJudge4(CVertex* s1, CVertex* g1);
 	//移動させた点によって交差していた場合、点を元に戻す関数
 	void VMoveCancel();
+
+	//線にダブルクリックで点を挿入する関数
+	void InsertVertex(float x, float y);
+
+	//左クリックで点を削除する関数
+	void DeleteVertex(float x, float y);
+	//図形の中に図形があるか(引数に削除する予定の点を与える)
+	bool GaihouJudge3(CShape* HoldS, CVertex* del);
+
 };
 
 

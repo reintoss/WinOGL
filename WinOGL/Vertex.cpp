@@ -103,6 +103,7 @@ bool CVertex::GetSelectLineFlag()
 	return SelectLineFlag;
 }
 
+/*
 // 各点のナンバーをセットする関数
 void CVertex::SetVNumber(int n)
 {
@@ -114,7 +115,7 @@ int CVertex::GetVNumber()
 {
 	return VNumber;
 }
-
+*/
 
 void CVertex::FreeVertex()
 {

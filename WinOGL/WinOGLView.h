@@ -70,6 +70,10 @@ public:
 	afx_msg void OnUpdateEditSelect(CCmdUI* pCmdUI);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
+	afx_msg void OnAllDelete();
+	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnUpdateAllDelete(CCmdUI* pCmdUI);
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン

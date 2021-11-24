@@ -24,12 +24,18 @@ void CAdminControl::Draw() {
 
         while (nowV != NULL)
         {
-            if (nowV->GetSelectVertexFlag() == false) {
+            if (nowV->GetSelectVertexFlag() == true) {
+                if (MoveNowJudge == true) { //点を移動中
+                    glColor3f(1.0, 0, 0); //赤
+                }
+                else { //点を選択
+                    glColor3f(0, 1.0, 1.0); //シアン
+                }
+            }
+            else { //通常
                 glColor3f(1.0, 1.0, 1.0); //白
             }
-            else {
-                glColor3f(0, 1.0, 1.0); //シアン
-            }
+
             glPointSize(10);
             glBegin(GL_POINTS);
             glVertex2f(nowV->GetX(), nowV->GetY());
@@ -431,6 +437,36 @@ void CAdminControl::DrawAxis()
     glEnd();
 }
 
+//全削除する関数
+
+void CAdminControl::AllDelete()
+{
+    /*
+    if (shape_head != NULL) {
+        for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+            int N = nowS->CountVertex();
+            for (int i = 0; i < N; i++) {
+                if (nowS->GetV() != NULL) {
+                    CVertex* pre_vp = NULL;
+                    CVertex* vp = nowS->GetV();
+                    while (vp->GetNext() != NULL) {
+                        pre_vp = vp;
+                        vp = vp->GetNext();
+                    }
+                    if (pre_vp != NULL) {
+                        pre_vp->SetNext(NULL);
+                    }
+                    else {
+                        delete vp;
+                        nowS->SetV_NULL();
+                    }
+                }
+            }
+        }
+    }
+    */
+}
+
 //選択した点の色を変える（実際に色を変えるのはDraw()内）
 int CAdminControl::SelectVertex(float x, float y)
 {
@@ -453,7 +489,6 @@ int CAdminControl::SelectVertex(float x, float y)
         }
     }
         return c;
-
 }
 
 //被選択のフラグをリセットする関数
@@ -893,7 +928,8 @@ void CAdminControl::DrawMoveVertex(float x, float y, float mx, float my)
     if (AlreadySelectVertexFlag == true) {
         MoveNowJudge = true;
         //始点もしくは終点を選んだ場合
-        if (HoldV->GetVNumber() == HoldS->CountVertex()) {
+        //if (HoldV->GetVNumber() == HoldS->CountVertex()) {
+        if (SameVertexJudge(HoldS->GetV(), HoldV) == true) {
             HoldS->GetV()->SetXY(mx, my);
             HoldV->SetXY(mx, my);
         }//始点終点以外を選んだ場合
@@ -957,16 +993,16 @@ bool CAdminControl::VMoveCrossJudge()
     CVertex* preV = HoldS->GetV();
     for (CVertex* vp = HoldS->GetV()->GetNext(); vp != NULL; vp = vp->GetNext()) {
         if (vp == HoldV) {
-            if (CrossJudge4(preV) == true) {
+            if (CrossJudge4(HoldV, preV) == true) {
                 return false;
             }
             if (HoldV->GetNext() != NULL) {
-                if (CrossJudge4(HoldV->GetNext()) == true) {
+                if (CrossJudge4(HoldV, HoldV->GetNext()) == true) {
                     return false;
                 }
             }
             else {
-                if (CrossJudge4(HoldS->GetV()->GetNext()) == true) {
+                if (CrossJudge4(HoldV,HoldS->GetV()->GetNext()) == true) {
                     return false;
                 }
             }
@@ -1015,12 +1051,9 @@ bool CAdminControl::GaihouJudge2(CShape* nowS, CShape* HoldS)
 }
 
 //与えた辺が他の辺と交差するか判定する(交差していればtrueを返す)
-bool CAdminControl::CrossJudge4(CVertex* vp)
+bool CAdminControl::CrossJudge4(CVertex* s1, CVertex* g1)
 {
-    CShape* nowS = shape_head;
-    CVertex* s1 = HoldV;
     CVertex* s2;
-    CVertex* g1 = vp;
     CVertex* g2;
     float G1;
     float G2;
@@ -1084,11 +1117,144 @@ bool CAdminControl::CrossJudge4(CVertex* vp)
 void CAdminControl::VMoveCancel()
 {
     //始点もしくは終点を選んだ場合
-    if (HoldV->GetVNumber() == HoldS->CountVertex()) {
+    //if (HoldV->GetVNumber() == HoldS->CountVertex()) {
+    if (SameVertexJudge(HoldS->GetV(), HoldV) == true) {
         HoldS->GetV()->SetXY(originX, originY);
         HoldV->SetXY(originX, originY);
     }//始点終点以外を選んだ場合
     else {
         HoldV->SetXY(originX, originY);
     }
+}
+
+//線にダブルクリックで点を挿入する関数
+void CAdminControl::InsertVertex(float x, float y)
+{
+    CVertex* vp = new CVertex(x, y); //打った点
+    CVertex* vp1;
+    CVertex* vp2;
+    float d1, d2;
+    int c = 0;
+
+    //各図形と各点を見ていく
+    //図形は今のshape_head以外、点は始点から終点を見る
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+
+        for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+            //線が選択されていたら点を挿入(ダブルクリックなのでfalseのとき)
+            if (nowV->GetSelectLineFlag() == false) {
+                vp1 = nowV;
+                if (nowV->GetNext() != NULL) {
+                    vp2 = nowV->GetNext();
+                }
+                else {
+                    vp2 = nowS->GetV();
+                }
+
+                //打った点と、各辺の両端の角度の総和を求める
+                d1 = Kakudo(Vector(vp1, vp2), Vector(vp1, vp));
+                d2 = Kakudo(Vector(vp2, vp1), Vector(vp2, vp));
+                if (d1 < 0) {
+                    d1 = d1 * (-1);
+                }
+                if (d2 < 0) {
+                    d2 = d2 * (-1);
+                }
+
+                if (d1 <= (PI / 2) && d2 <= (PI / 2)) {
+                    if (VtoL_Distance(vp1, vp2, vp) <= 0.03) {
+                        vp->SetNext(nowV->GetNext());
+                        nowV->SetNext(vp);
+                    }
+                }
+            }
+        }
+    }
+}
+
+//左クリックで点を削除する関数
+void CAdminControl::DeleteVertex(float x, float y)
+{
+
+    //各図形と各点を見ていく
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        CVertex* pre_vp = nowS->GetV();
+        CVertex* startV = nowS->GetV();
+        for (CVertex* nowV = nowS->GetV()->GetNext(); nowV != NULL; nowV = nowV->GetNext()) {
+            CVertex* del = nowV;
+            //点が選択されている場合のみ有効
+            if (nowV->GetSelectVertexFlag() == true) {
+                HoldS = nowS;
+                if (nowS->CountVertex() > 4) {
+                    if (Distance(nowV, x, y) <= 0.05) {
+                        if (del->GetNext() == NULL) { //終点(=始点)を選んだ場合
+                            if (CrossJudge4(pre_vp, nowS->GetV()->GetNext()) == false) {
+                                if (GaihouJudge3(HoldS, del) == false) {
+                                    nowS->SetV(nowS->GetV()->GetNext());
+                                    nowV->SetXY(nowS->GetV()->GetX(), nowS->GetV()->GetY());
+                                    delete startV;
+                                }
+                            }
+                        }
+                        else { //終点(始点)以外を選んだ場合
+                            if (CrossJudge4(pre_vp, del->GetNext()) == false) {
+                                if (GaihouJudge3(HoldS, del) == false) {
+                                    pre_vp->SetNext(del->GetNext());
+                                    delete del;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            pre_vp = nowV;
+        }
+    }
+}
+
+//図形の中に図形があるか(引数に削除する予定の点を与える)
+bool CAdminControl::GaihouJudge3(CShape* HoldS, CVertex* del)
+{
+    CVertex* nowV = shape_head->GetV();
+    CVertex* outvpNext = NULL;
+    float sum = 0;
+
+    //外側の図形以外を見ていく
+    for (CShape* sp = shape_head->GetNextS(); sp != NULL; sp = sp->GetNextS()) {
+        sum = 0;
+        if (sp != HoldS) {
+            CVertex* V = sp->GetV(); //外側の図形以外の1点
+
+            //外側の図形の点を見ていく
+            for (CVertex* outvp = HoldS->GetV()->GetNext(); outvp != NULL; outvp = outvp->GetNext()) {
+                if (outvp->GetNext() != NULL) {
+                    outvpNext = outvp->GetNext();
+                }
+                else {
+                    outvpNext = HoldS->GetV()->GetNext();
+                }
+
+                if (outvp != del) {
+                    if (outvpNext != del) {
+                        sum = sum + Kakudo(Vector(V, outvp), Vector(V, outvpNext));
+                    }
+                    else {
+                        if (outvpNext->GetNext() != NULL) {
+                            sum = sum + Kakudo(Vector(V, outvp), Vector(V, outvpNext->GetNext()));
+                        }
+                        else { //削除する予定の点が終点(=始点)の場合
+                            sum = sum + Kakudo(Vector(V, outvp), Vector(V, HoldS->GetV()->GetNext()));
+                        }
+                    }
+                }
+            }
+            if (sum > 0.001 || sum < -0.001) {//内包している場合
+                return true;
+            }
+
+        }
+    }
+
+    return false;
 }

@@ -18,7 +18,7 @@ private:
 	bool SelectVertexFlag = false;
 	bool SelectLineFlag = false;
 
-	int VNumber = 1;
+	//int VNumber = 1;
 
 	//　次の頂点リストを指すポインタ
 	CVertex* next_vertex = NULL;
@@ -53,9 +53,11 @@ public:
 	void SetSelectLineFlag(bool f);
 	bool GetSelectLineFlag();
 
+	/*
 	// 各点のナンバーをセット・取得する関数
 	void SetVNumber(int n);
 	int GetVNumber();
+	*/
 
 	void FreeVertex();
 };
