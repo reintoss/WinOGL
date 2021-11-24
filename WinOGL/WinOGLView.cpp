@@ -41,6 +41,8 @@ BEGIN_MESSAGE_MAP(CWinOGLView, CView)
 //	ON_UPDATE_COMMAND_UI(ID_ALL_DELETE, &CWinOGLView::OnUpdateAllDelete)
 ON_WM_RBUTTONDOWN()
 ON_UPDATE_COMMAND_UI(ID_ALL_DELETE, &CWinOGLView::OnUpdateAllDelete)
+ON_COMMAND(ID_SQUARE, &CWinOGLView::OnSquare)
+ON_UPDATE_COMMAND_UI(ID_SQUARE, &CWinOGLView::OnUpdateSquare)
 END_MESSAGE_MAP()
 
 // CWinOGLView コンストラクション/デストラクション
@@ -118,16 +120,16 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 	CRect rect;
 	GetClientRect(rect); // 描画領域の大きさを取得
 
-	clickX = (double)point.x / rect.Width(); //ex.1920を1とする
-	clickX = clickX * 2 - 1; //区間[0,1]を[-1,0,1]にする
+	clickX_L = (double)point.x / rect.Width(); //ex.1920を1とする
+	clickX_L = clickX_L * 2 - 1; //区間[0,1]を[-1,0,1]にする
 	if (rect.Width()> rect.Height()) { //横長の時
-		clickX = clickX * ((double)rect.Width()/ rect.Height());
+		clickX_L = clickX_L * ((double)rect.Width()/ rect.Height());
 	}
 
-	clickY = (double)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
-	clickY = clickY * 2 - 1; //区間[0,1]を[-1,0,1]にする
+	clickY_L = (double)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
+	clickY_L = clickY_L * 2 - 1; //区間[0,1]を[-1,0,1]にする
 	if (rect.Height() > rect.Width()) { //縦長の時
-		clickY = clickY * ((double)rect.Height() / rect.Width());
+		clickY_L = clickY_L * ((double)rect.Height() / rect.Width());
 	}
 
 	LButtonDownFlag = true;
@@ -157,7 +159,12 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 
 	//編集ボタンが押されていない場合、通常モード
 	if (AC.SelectButtonFlag == false) {
-		AC.CreateShape(clickX, clickY); //問8.2
+		if (AC.SquareButtonFlag == false) {
+			AC.CreateShape(clickX, clickY); //問8.2
+		}
+		else {
+			AC.DrawSquare(clickX_L, clickY_L, clickX, clickY);
+		}
 	}
 	else {
 		//マウスが動いていない場合、選択モード
@@ -192,21 +199,21 @@ void CWinOGLView::OnMouseMove(UINT nFlags, CPoint point)
 	CRect rect;
 	GetClientRect(rect); // 描画領域の大きさを取得
 
-	clickX_m = (double)point.x / rect.Width(); //ex.1920を1とする
-	clickX_m = clickX_m * 2 - 1; //区間[0,1]を[-1,0,1]にする
+	clickX_M = (double)point.x / rect.Width(); //ex.1920を1とする
+	clickX_M = clickX_M * 2 - 1; //区間[0,1]を[-1,0,1]にする
 	if (rect.Width() > rect.Height()) { //横長の時
-		clickX_m = clickX_m * ((double)rect.Width() / rect.Height());
+		clickX_M = clickX_M * ((double)rect.Width() / rect.Height());
 	}
 
-	clickY_m = (double)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
-	clickY_m = clickY_m * 2 - 1; //区間[0,1]を[-1,0,1]にする
+	clickY_M = (double)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
+	clickY_M = clickY_M * 2 - 1; //区間[0,1]を[-1,0,1]にする
 	if (rect.Height() > rect.Width()) { //縦長の時
-		clickY_m = clickY_m * ((double)rect.Height() / rect.Width());
+		clickY_M = clickY_M * ((double)rect.Height() / rect.Width());
 	}
 
 	if (AC.SelectButtonFlag == true) {
 		if (LButtonDownFlag == true) {
-			AC.DrawMoveVertex(clickX, clickY, clickX_m, clickY_m);
+			AC.DrawMoveVertex(clickX, clickY, clickX_M, clickY_M);
 		}
 	}
 
@@ -384,12 +391,15 @@ void CWinOGLView::OnUpdateXyz(CCmdUI* pCmdUI)
 void CWinOGLView::OnEditSelect()
 {
 	if (AC.GetShapeCloseFlag() == true) {
-		if (AC.SelectButtonFlag == true) {
-			AC.SelectButtonFlag = false;
-			AC.NotSelectFlagReset();
-		}
-		else {
-			AC.SelectButtonFlag = true;
+		if (AC.GetNoVertex() == false) {
+			if (AC.SelectButtonFlag == true) {
+				AC.SelectButtonFlag = false;
+				AC.NotSelectFlagReset();
+			}
+			else {
+				AC.SelectButtonFlag = true;
+				AC.SquareButtonFlag = false;
+			}
 		}
 	}
 
@@ -407,6 +417,33 @@ void CWinOGLView::OnUpdateEditSelect(CCmdUI* pCmdUI)
 	}
 }
 
+void CWinOGLView::OnSquare()
+{
+	if (AC.GetShapeCloseFlag() == true || AC.GetNoVertex() == true) {
+		if (AC.SquareButtonFlag == false) {
+			if (AC.SelectButtonFlag == true) {
+				AC.SelectButtonFlag = false;
+				AC.NotSelectFlagReset();
+			}
+			AC.SquareButtonFlag = true;
+		}
+		else {
+			AC.SquareButtonFlag = false;
+		}
+	}
+
+	RedrawWindow();
+}
+
+void CWinOGLView::OnUpdateSquare(CCmdUI* pCmdUI)
+{
+	if (AC.SquareButtonFlag == true) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
+}
 
 void CWinOGLView::OnAllDelete()
 {
@@ -431,3 +468,4 @@ void CWinOGLView::OnUpdateAllDelete(CCmdUI* pCmdUI)
 		pCmdUI->SetCheck(false);
 	}
 }
+

@@ -55,11 +55,17 @@ public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 
 private:
+
+	//左ボタンをクリックしたときのx,y座標
+	double clickX_L = 0;
+	double clickY_L = 0;
+
 	double clickX = 0;
 	double clickY = 0;
 
-	double clickX_m = 0;
-	double clickY_m = 0;
+	//マウスが移動中のときのx,y座標
+	double clickX_M = 0;
+	double clickY_M = 0;
 
 	bool LButtonDownFlag = false;
 
@@ -74,6 +80,8 @@ public:
 	afx_msg void OnAllDelete();
 	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnUpdateAllDelete(CCmdUI* pCmdUI);
+	afx_msg void OnSquare();
+	afx_msg void OnUpdateSquare(CCmdUI* pCmdUI);
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン

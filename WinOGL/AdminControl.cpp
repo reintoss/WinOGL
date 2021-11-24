@@ -348,10 +348,13 @@ void CAdminControl::FreeMemory()
 
 void CAdminControl::CreateShape(float x, float y)
 {
+
     ShapeCloseFlag = false;
+
     //“_‚ª‰½‚à‚È‚¢‚Æ‚«(1“_–Ú)
     if (shape_head == NULL) {
         AddShape();
+        NoVertex = false;
     }
 
     //}Œ`‚ª1‚Â–Ú‚ÌŽž
@@ -465,6 +468,84 @@ void CAdminControl::AllDelete()
         }
     }
     */
+}
+
+//ŽlŠpŒ`‚ð•`‰æ‚·‚éŠÖ”
+void CAdminControl::DrawSquare(float x1, float y1, float x2, float y2)
+{
+
+    float diff_x = x1 - x2;
+    float diff_y = y1 - y2;
+    bool f = false;
+    int count = 0;
+
+    if (diff_x>= 0.05 || diff_x <= -0.05) {
+        if (diff_y >= 0.05 || diff_y <= -0.05) {
+
+            if (shape_head == NULL) { //}Œ`‚ª1‚Â–Ú‚Ì‚Æ‚«
+                AddShape();
+                NoVertex = false;
+                f = true;
+            }
+            else { //}Œ`‚ª2‚Â–ÚˆÈ~‚Ì‚Æ‚«
+                CVertex* a = new CVertex(x1, y1);
+                CVertex* b = new CVertex(x2, y1);
+                CVertex* c = new CVertex(x2, y2);
+                CVertex* d = new CVertex(x1, y2);
+
+                //ŠO•ï”»’è
+                for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+                    if (GaihouJudge5(nowS, a, b, c, d) == true) {
+                        count++;
+                    }
+                }
+
+                //Œð·”»’è
+                if (count == 0) {
+                    if (CrossJudge4(a, b) == false && CrossJudge4(b, c) == false && CrossJudge4(c, d) == false && CrossJudge4(d, a) == false) {
+                        f = true;
+                    }
+                }
+            }
+
+            if (f == true) {
+                shape_head->AddVertex(x1, y1);
+                shape_head->AddVertex(x2, y1);
+                shape_head->AddVertex(x2, y2);
+                shape_head->AddVertex(x1, y2);
+                shape_head->AddVertex(shape_head->GetV()->GetX(), shape_head->GetV()->GetY());
+                AddShape();
+                ShapeCloseFlag = true;
+            }
+        }
+    }
+
+}
+
+//NoVertex‚ðŽæ“¾‚·‚éŠÖ”
+bool CAdminControl::GetNoVertex()
+{
+    return NoVertex;
+}
+
+//ŽlŠpŒ`‚Ì’†‚É}Œ`‚ª‚ ‚é‚©(“_‚ð4‚Â—^‚¦‚é)
+bool CAdminControl::GaihouJudge5(CShape* nowS, CVertex* a, CVertex* b, CVertex* c, CVertex* d)
+{
+
+    float sum = 0;
+
+    CVertex* V = nowS->GetV(); //}Œ`‚Ì1“_
+
+    //2ü•ª‚Ì‚È‚·Šp‚Ì‘˜a
+    sum = Kakudo(Vector(V, a), Vector(V, b)) + Kakudo(Vector(V, b), Vector(V, c)) + Kakudo(Vector(V, c), Vector(V, d)) + Kakudo(Vector(V, d), Vector(V, a));
+
+    if (sum > 0.001 || sum < -0.001) {//“à•ï‚µ‚Ä‚¢‚éê‡
+        return true;
+    }
+    else {
+        return false;
+    }
+
 }
 
 //‘I‘ð‚µ‚½“_‚ÌF‚ð•Ï‚¦‚éiŽÀÛ‚ÉF‚ð•Ï‚¦‚é‚Ì‚ÍDraw()“àj

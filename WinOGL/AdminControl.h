@@ -76,6 +76,18 @@ public:
 	//全削除ボタンが押されているかどうかのフラグ
 	bool AllDeleteButtonFlag = false;
 
+	//四角形を描画する関数
+	void DrawSquare(float x1, float y1, float x2, float y2);
+	//四角形ボタンが押されているかどうかのフラグ
+	bool SquareButtonFlag = false;
+	//点を全く打っていない状態かどうか
+	bool NoVertex = true;
+	//NoVertexを取得する関数
+	bool GetNoVertex();
+	//四角形の中に図形があるか(点を4つ与える)
+	bool GaihouJudge5(CShape* nowS, CVertex* a, CVertex* b, CVertex* c, CVertex* d);
+
+
 	//選択した点の色を変える関数（実際に色を変えるのはDraw()内）
 	int SelectVertex(float x, float y);
 
@@ -111,7 +123,7 @@ public:
 	//被選択のフラグをリセットする関数
 	void NotSelectFlagReset();
 	//描画した図形たちが閉じているかのフラグ
-	bool ShapeCloseFlag = false;
+	bool ShapeCloseFlag = true;
 	//ShapeCloseFlagを取得する関数（WinOGLView.cppで使うために関数にする）
 	bool GetShapeCloseFlag();
 
