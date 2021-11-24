@@ -82,6 +82,8 @@ public:
 	afx_msg void OnUpdateAllDelete(CCmdUI* pCmdUI);
 	afx_msg void OnSquare();
 	afx_msg void OnUpdateSquare(CCmdUI* pCmdUI);
+	afx_msg void OnStraight();
+	afx_msg void OnUpdateStraight(CCmdUI* pCmdUI);
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン

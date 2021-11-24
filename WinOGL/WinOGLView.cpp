@@ -43,6 +43,10 @@ ON_WM_RBUTTONDOWN()
 ON_UPDATE_COMMAND_UI(ID_ALL_DELETE, &CWinOGLView::OnUpdateAllDelete)
 ON_COMMAND(ID_SQUARE, &CWinOGLView::OnSquare)
 ON_UPDATE_COMMAND_UI(ID_SQUARE, &CWinOGLView::OnUpdateSquare)
+//ON_COMMAND(ID_STRAIGHT, &CWinOGLView::OnStraight)
+//ON_UPDATE_COMMAND_UI(ID_STRAIGHT, &CWinOGLView::OnUpdateStraight)
+ON_COMMAND(ID_STRAIGHT, &CWinOGLView::OnStraight)
+ON_UPDATE_COMMAND_UI(ID_STRAIGHT, &CWinOGLView::OnUpdateStraight)
 END_MESSAGE_MAP()
 
 // CWinOGLView コンストラクション/デストラクション
@@ -159,11 +163,14 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 
 	//編集ボタンが押されていない場合、通常モード
 	if (AC.SelectButtonFlag == false) {
-		if (AC.SquareButtonFlag == false) {
+		if (AC.SquareButtonFlag == false && AC.StraightButtonFlag==false) {
 			AC.CreateShape(clickX, clickY); //問8.2
 		}
-		else {
+		else if(AC.SquareButtonFlag == true){
 			AC.DrawSquare(clickX_L, clickY_L, clickX, clickY);
+		}
+		else {
+			AC.DrawStraight(clickX, clickY);
 		}
 	}
 	else {
@@ -399,6 +406,7 @@ void CWinOGLView::OnEditSelect()
 			else {
 				AC.SelectButtonFlag = true;
 				AC.SquareButtonFlag = false;
+				AC.StraightButtonFlag = false;
 			}
 		}
 	}
@@ -445,6 +453,36 @@ void CWinOGLView::OnUpdateSquare(CCmdUI* pCmdUI)
 	}
 }
 
+
+void CWinOGLView::OnStraight()
+{
+
+	if (AC.StraightButtonFlag == false) {
+		if (AC.SelectButtonFlag == true) {
+			AC.SelectButtonFlag = false;
+			AC.NotSelectFlagReset();
+		}
+		AC.StraightButtonFlag = true;
+	}
+	else {
+		AC.StraightButtonFlag = false;
+	}
+
+	RedrawWindow();
+}
+
+
+void CWinOGLView::OnUpdateStraight(CCmdUI* pCmdUI)
+{
+	if (AC.StraightButtonFlag == true) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
+}
+
+
 void CWinOGLView::OnAllDelete()
 {
 
@@ -468,4 +506,3 @@ void CWinOGLView::OnUpdateAllDelete(CCmdUI* pCmdUI)
 		pCmdUI->SetCheck(false);
 	}
 }
-

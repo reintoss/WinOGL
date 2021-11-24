@@ -548,6 +548,40 @@ bool CAdminControl::GaihouJudge5(CShape* nowS, CVertex* a, CVertex* b, CVertex* 
 
 }
 
+//直線モード
+void CAdminControl::DrawStraight(float x, float y)
+{
+
+    float kakudo;
+    CVertex* a = new CVertex(x, y);
+    CVertex* preV = NULL;
+
+    //図形が何もないとき
+    if (shape_head == NULL) {
+        CreateShape(x, y);
+    }
+    else if (shape_head->GetV() == NULL) { //1点目の場合
+        CreateShape(x, y);
+    }
+    else { //2点目以降の場合
+        for (CVertex* nowV = shape_head->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+            preV = nowV;
+        }
+        CVertex* b = new CVertex(preV->GetX() + 0.5, preV->GetY());
+        kakudo = Kakudo(Vector(preV, b), Vector(preV, a));
+        if (kakudo >= -2.356 && kakudo < -0.785) { //-45°～-135°
+            CreateShape(preV->GetX(), y);
+        }
+        else if (kakudo > 0.785 && kakudo <= 2.356) { //45°～135°
+            CreateShape(preV->GetX(), y);
+        }
+        else { //-45°～45°,135°～-135°
+            CreateShape(x, preV->GetY());
+        }
+    }
+
+}
+
 //選択した点の色を変える（実際に色を変えるのはDraw()内）
 int CAdminControl::SelectVertex(float x, float y)
 {

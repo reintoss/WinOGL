@@ -87,6 +87,14 @@ public:
 	//四角形の中に図形があるか(点を4つ与える)
 	bool GaihouJudge5(CShape* nowS, CVertex* a, CVertex* b, CVertex* c, CVertex* d);
 
+	//直線モード
+	void DrawStraight(float x, float y);
+	//直線ボタンが押されているかどうかのフラグ
+	bool StraightButtonFlag = false;
+
+
+
+public:
 
 	//選択した点の色を変える関数（実際に色を変えるのはDraw()内）
 	int SelectVertex(float x, float y);
