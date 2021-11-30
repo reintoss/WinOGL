@@ -40,7 +40,7 @@ BEGIN_MESSAGE_MAP(CWinOGLView, CView)
 	ON_COMMAND(ID_ALL_DELETE, &CWinOGLView::OnAllDelete)
 //	ON_UPDATE_COMMAND_UI(ID_ALL_DELETE, &CWinOGLView::OnUpdateAllDelete)
 ON_WM_RBUTTONDOWN()
-ON_UPDATE_COMMAND_UI(ID_ALL_DELETE, &CWinOGLView::OnUpdateAllDelete)
+//ON_UPDATE_COMMAND_UI(ID_ALL_DELETE, &CWinOGLView::OnUpdateAllDelete)
 ON_COMMAND(ID_SQUARE, &CWinOGLView::OnSquare)
 ON_UPDATE_COMMAND_UI(ID_SQUARE, &CWinOGLView::OnUpdateSquare)
 //ON_COMMAND(ID_STRAIGHT, &CWinOGLView::OnStraight)
@@ -53,8 +53,16 @@ END_MESSAGE_MAP()
 
 CWinOGLView::CWinOGLView() noexcept
 {
-	double clickX = 0;
-	double clickY = 0;
+	//左ボタンをクリックしたときのx,y座標
+	clickX_L = 0;
+	clickY_L = 0;
+
+	clickX = 0;
+	clickY = 0;
+
+	//マウスが移動中のときのx,y座標
+	clickX_M = 0;
+	clickY_M = 0;
 
 }
 
@@ -124,16 +132,16 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 	CRect rect;
 	GetClientRect(rect); // 描画領域の大きさを取得
 
-	clickX_L = (double)point.x / rect.Width(); //ex.1920を1とする
+	clickX_L = (float)point.x / rect.Width(); //ex.1920を1とする
 	clickX_L = clickX_L * 2 - 1; //区間[0,1]を[-1,0,1]にする
 	if (rect.Width()> rect.Height()) { //横長の時
-		clickX_L = clickX_L * ((double)rect.Width()/ rect.Height());
+		clickX_L = clickX_L * ((float)rect.Width()/ rect.Height());
 	}
 
-	clickY_L = (double)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
+	clickY_L = (float)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
 	clickY_L = clickY_L * 2 - 1; //区間[0,1]を[-1,0,1]にする
 	if (rect.Height() > rect.Width()) { //縦長の時
-		clickY_L = clickY_L * ((double)rect.Height() / rect.Width());
+		clickY_L = clickY_L * ((float)rect.Height() / rect.Width());
 	}
 
 	LButtonDownFlag = true;
@@ -149,16 +157,16 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 	CRect rect;
 	GetClientRect(rect); // 描画領域の大きさを取得
 
-	clickX = (double)point.x / rect.Width(); //ex.1920を1とする
+	clickX = (float)point.x / rect.Width(); //ex.1920を1とする
 	clickX = clickX * 2 - 1; //区間[0,1]を[-1,0,1]にする
 	if (rect.Width() > rect.Height()) { //横長の時
-		clickX = clickX * ((double)rect.Width() / rect.Height());
+		clickX = clickX * ((float)rect.Width() / rect.Height());
 	}
 
-	clickY = (double)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
+	clickY = (float)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
 	clickY = clickY * 2 - 1; //区間[0,1]を[-1,0,1]にする
 	if (rect.Height() > rect.Width()) { //縦長の時
-		clickY = clickY * ((double)rect.Height() / rect.Width());
+		clickY = clickY * ((float)rect.Height() / rect.Width());
 	}
 
 	//編集ボタンが押されていない場合、通常モード
@@ -175,24 +183,34 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 	}
 	else {
 		//マウスが動いていない場合、選択モード
-		if (AC.GetMoveNowJudge() == false) {
+		if (AC.GetVertexMoveNowJudge() == false && AC.GetShapeMoveNowJudge() == false) {
 			if (AC.SelectVertex(clickX, clickY) != 1) {
 				if (AC.SelectLine(clickX, clickY) != 1) {
 					AC.SelectShape(clickX, clickY);
 				}
 			}
 		}//点移動後、交差している場合
-		else if(AC.VMoveCrossJudge() == false) {
-			AC.VMoveCancel();
+		else if (AC.GetVertexMoveNowJudge() == true) {
+			if (AC.VMoveCrossJudge() == true) {
+				AC.VMoveCancel();
+			}
+		}//Shape移動後、交差している場合
+		else if (AC.GetShapeMoveNowJudge() == true) {
+			if (AC.ShapeMoveCrossJudge() == true) {
+				AC.ShapeMoveCancel();
+				AC.Reset_shape_head2();
+			}
 		}
 	}
 
 
 	LButtonDownFlag = false;
-	AC.ResetMoveNowJudge();
+	AC.ResetVertexMoveNowJudge();
+	AC.ResetShapeMoveNowJudge();
 	AC.ResetHoldV();
 	AC.ResetHoldS();
 	AC.ResetAlreadySelectVertexFlag();
+	AC.ResetAlreadySelectShapeFlag();
 
 	RedrawWindow();
 
@@ -206,21 +224,23 @@ void CWinOGLView::OnMouseMove(UINT nFlags, CPoint point)
 	CRect rect;
 	GetClientRect(rect); // 描画領域の大きさを取得
 
-	clickX_M = (double)point.x / rect.Width(); //ex.1920を1とする
+	clickX_M = (float)point.x / rect.Width(); //ex.1920を1とする
 	clickX_M = clickX_M * 2 - 1; //区間[0,1]を[-1,0,1]にする
 	if (rect.Width() > rect.Height()) { //横長の時
-		clickX_M = clickX_M * ((double)rect.Width() / rect.Height());
+		clickX_M = clickX_M * ((float)rect.Width() / rect.Height());
 	}
 
-	clickY_M = (double)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
+	clickY_M = (float)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
 	clickY_M = clickY_M * 2 - 1; //区間[0,1]を[-1,0,1]にする
 	if (rect.Height() > rect.Width()) { //縦長の時
-		clickY_M = clickY_M * ((double)rect.Height() / rect.Width());
+		clickY_M = clickY_M * ((float)rect.Height() / rect.Width());
 	}
 
 	if (AC.SelectButtonFlag == true) {
-		if (LButtonDownFlag == true) {
-			AC.DrawMoveVertex(clickX, clickY, clickX_M, clickY_M);
+		if (LButtonDownFlag == true) {		
+			if (AC.DrawMoveShape(clickX_L, clickY_L, clickX_M, clickY_M) == false) {
+				AC.DrawMoveVertex(clickX_L, clickY_L, clickX_M, clickY_M);
+			}
 		}
 	}
 
@@ -236,16 +256,16 @@ void CWinOGLView::OnLButtonDblClk(UINT nFlags, CPoint point)
 	CRect rect;
 	GetClientRect(rect); // 描画領域の大きさを取得
 
-	clickX = (double)point.x / rect.Width(); //ex.1920を1とする
+	clickX = (float)point.x / rect.Width(); //ex.1920を1とする
 	clickX = clickX * 2 - 1; //区間[0,1]を[-1,0,1]にする
 	if (rect.Width() > rect.Height()) { //横長の時
-		clickX = clickX * ((double)rect.Width() / rect.Height());
+		clickX = clickX * ((float)rect.Width() / rect.Height());
 	}
 
-	clickY = (double)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
+	clickY = (float)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
 	clickY = clickY * 2 - 1; //区間[0,1]を[-1,0,1]にする
 	if (rect.Height() > rect.Width()) { //縦長の時
-		clickY = clickY * ((double)rect.Height() / rect.Width());
+		clickY = clickY * ((float)rect.Height() / rect.Width());
 	}
 
 	//編集ボタンが押されている場合のみ有効
@@ -264,16 +284,16 @@ void CWinOGLView::OnRButtonDown(UINT nFlags, CPoint point)
 	CRect rect;
 	GetClientRect(rect); // 描画領域の大きさを取得
 
-	clickX = (double)point.x / rect.Width(); //ex.1920を1とする
+	clickX = (float)point.x / rect.Width(); //ex.1920を1とする
 	clickX = clickX * 2 - 1; //区間[0,1]を[-1,0,1]にする
 	if (rect.Width() > rect.Height()) { //横長の時
-		clickX = clickX * ((double)rect.Width() / rect.Height());
+		clickX = clickX * ((float)rect.Width() / rect.Height());
 	}
 
-	clickY = (double)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
+	clickY = (float)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
 	clickY = clickY * 2 - 1; //区間[0,1]を[-1,0,1]にする
 	if (rect.Height() > rect.Width()) { //縦長の時
-		clickY = clickY * ((double)rect.Height() / rect.Width());
+		clickY = clickY * ((float)rect.Height() / rect.Width());
 	}
 
 	//編集ボタンが押されている場合のみ有効
@@ -324,9 +344,9 @@ int CWinOGLView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 void CWinOGLView::OnDestroy()
 {
 	CView::OnDestroy();
-	AC.FreeMemory();
+	//AC.FreeMemory();
 	wglDeleteContext(m_hRC);
-	// TODO: ここにメッセージ ハンドラー コードを追加します。
+
 }
 
 
@@ -433,6 +453,9 @@ void CWinOGLView::OnSquare()
 				AC.SelectButtonFlag = false;
 				AC.NotSelectFlagReset();
 			}
+			if (AC.StraightButtonFlag == true) {
+				AC.StraightButtonFlag = false;
+			}
 			AC.SquareButtonFlag = true;
 		}
 		else {
@@ -462,6 +485,9 @@ void CWinOGLView::OnStraight()
 			AC.SelectButtonFlag = false;
 			AC.NotSelectFlagReset();
 		}
+		if (AC.SquareButtonFlag == true) {
+			AC.SquareButtonFlag = false;
+		}
 		AC.StraightButtonFlag = true;
 	}
 	else {
@@ -485,24 +511,10 @@ void CWinOGLView::OnUpdateStraight(CCmdUI* pCmdUI)
 
 void CWinOGLView::OnAllDelete()
 {
-
-	if (AC.AllDeleteButtonFlag == true) {
-		AC.AllDeleteButtonFlag = false;
+	AC.AllDelete();
+	AC.SetShapeCloseFlag(false);
+	if (AC.SelectButtonFlag == true) {
+		AC.SelectButtonFlag = false;
 	}
-	else {
-		AC.AllDeleteButtonFlag = true;
-		AC.AllDelete();
-	}
-
-}
-
-
-void CWinOGLView::OnUpdateAllDelete(CCmdUI* pCmdUI)
-{
-	if (AC.AllDeleteButtonFlag == true) {
-		pCmdUI->SetCheck(true);
-	}
-	else {
-		pCmdUI->SetCheck(false);
-	}
+	RedrawWindow();
 }

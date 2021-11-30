@@ -3,6 +3,7 @@
 #include <gl/GL.h>
 #include "Vertex.h"
 #include "Shape.h"
+#include "pch.h"
 
 class CAdminControl {
 
@@ -15,6 +16,9 @@ public:
 
 	//点をshape_headに追加する関数
 	void AddShape();
+
+	//点をshape_headに追加する関数
+	void AddShape2();
 
 	//2点間の距離を求め返却する関数
 	float Distance(CVertex* s, float x, float y);
@@ -55,10 +59,9 @@ public:
 	//void FreeVertex();
 
 private:
-	//　頂点リストのヘッド
-	//Vertex* vertex_head = NULL;
+	//形状リストのヘッド
 	CShape* shape_head = NULL;
-	CShape* shape_change = NULL;
+	CShape* shape_head2 = NULL; //形状一時保持用
 
 public:
 
@@ -91,7 +94,8 @@ public:
 	void DrawStraight(float x, float y);
 	//直線ボタンが押されているかどうかのフラグ
 	bool StraightButtonFlag = false;
-
+	//直前の直線の向き(1：x正、2：x負、3：y正、4：y負)
+	int StraightPreMove = 0;
 
 
 public:
@@ -131,18 +135,20 @@ public:
 	//被選択のフラグをリセットする関数
 	void NotSelectFlagReset();
 	//描画した図形たちが閉じているかのフラグ
-	bool ShapeCloseFlag = true;
+	bool ShapeCloseFlag = false;
 	//ShapeCloseFlagを取得する関数（WinOGLView.cppで使うために関数にする）
 	bool GetShapeCloseFlag();
+	//ShapeCloseFlagをセットする関数
+	void SetShapeCloseFlag(bool f);
 
 	//マウスがムーブした場所に点を描画する関数
 	void DrawMoveVertex(float x, float y, float mx, float my);
 	//今マウスが動いているかどうか
-	bool MoveNowJudge = false;
+	bool VertexMoveNowJudge = false;
 	//今マウスが動いているかどうかを取得する関数
-	bool GetMoveNowJudge();
+	bool GetVertexMoveNowJudge();
 	//MoveNowJudgeをfalseにする関数
-	void ResetMoveNowJudge();
+	void ResetVertexMoveNowJudge();
 	//ホールドしている点
 	CVertex* HoldV = NULL;
 	//ホールドしている点をリセットする関数
@@ -175,6 +181,26 @@ public:
 	//図形の中に図形があるか(引数に削除する予定の点を与える)
 	bool GaihouJudge3(CShape* HoldS, CVertex* del);
 
+	//マウスがムーブした場所にShapeを描画する関数
+	bool DrawMoveShape(float x, float y, float mx, float my);
+	//Shapeが選択済みかどうか
+	bool AlreadySelectShapeFlag = false;
+	//Shape移動時の選択判定のフラグをリセットする関数
+	void ResetAlreadySelectShapeFlag();
+	//今マウスが動いているかどうか
+	bool ShapeMoveNowJudge = false;
+	//今マウスが動いているかどうかを取得する関数
+	bool GetShapeMoveNowJudge();
+	//MoveNowJudgeをfalseにする関数
+	void ResetShapeMoveNowJudge();
+	//移動させたShapeによって交差する箇所があるか
+	bool ShapeMoveCrossJudge();
+	//移動させたShapeによって交差していた場合、Shapeを元に戻す関数
+	void ShapeMoveCancel();
+	//Shape移動をキャンセルした場合に使用
+	CShape* HoldS2 = NULL;
+	//ResetHoldS2をリセットする関数
+	void Reset_shape_head2();
 };
 
 

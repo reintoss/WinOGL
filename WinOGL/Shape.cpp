@@ -1,6 +1,11 @@
 #include "pch.h"
 #include "Shape.h"
 
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#undef THIS_FILE
+static char THIS_FILE[] = __FILE__;
+#endif
 
 CShape::CShape(){
 
@@ -51,15 +56,30 @@ CShape* CShape::GetNextS(){
 
 }
 
+CShape* CShape::SetPreS(CShape* new_preS)
+{
+    return pre_shape = new_preS;
+}
+
+CShape* CShape::GetPreS()
+{
+    return pre_shape;
+}
+
 void CShape::FreeShape(){
 
 	CShape* nowS = this;
-	while (nowS != NULL) {
-		CShape* del_cell = nowS;
-		nowS = nowS->GetNextS();
-		delete del_cell;
-	}
+    while (nowS != NULL) {
+        CShape* del_cellS = nowS;
+        nowS = nowS->GetNextS();
+        delete del_cellS;
+    }
+}
 
+void CShape::OnlyFreeShape()
+{
+    CShape* del_cellS = this;
+    delete del_cellS;
 }
 
 CVertex* CShape::AddVertex(float x, float y)

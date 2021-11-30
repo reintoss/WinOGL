@@ -1,4 +1,6 @@
 #pragma once
+#include <stdio.h> 
+#include "pch.h"
 
 class CVertex{
 
@@ -8,22 +10,20 @@ public:
 	~CVertex();
 private:
 	//　頂点のX座標
-	float x;
+	float x = 0;
 	//　頂点のY座標
-	float y;
-
-	float xy[2];
-
-
-	bool SelectVertexFlag = false;
-	bool SelectLineFlag = false;
-
+	float y = 0;
 	//int VNumber = 1;
 
 	//　次の頂点リストを指すポインタ
 	CVertex* next_vertex = NULL;
 	//　前の頂点リストを指すポインタ
 	CVertex* pre_vertex = NULL;
+
+
+	bool SelectVertexFlag = false;
+	bool SelectLineFlag = false;
+
 
 public:
 	//　頂点のX・Y座標の両方を書き込む
@@ -32,8 +32,6 @@ public:
 	float GetX();
 	//　頂点のY座標を読み込む
 	float GetY();
-	//　頂点のXY座標を読み込む
-	void GetXY(float *d);
 
 	//　次の頂点リストを指すポインタを書き込む
 	CVertex* SetNext(CVertex* new_next);

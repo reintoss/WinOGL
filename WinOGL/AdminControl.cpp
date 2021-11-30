@@ -1,9 +1,15 @@
 #include "pch.h"
 #include "AdminControl.h"
-#include "Vertex.h"
+#include <math.h>
+
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#undef THIS_FILE
+static char THIS_FILE[] = __FILE__;
+#endif
 
 #define PI 3.14159265
-CVertex* vertex_head = NULL;
+//CVertex* vertex_head = NULL;
 
 CAdminControl::CAdminControl() {
 
@@ -25,7 +31,7 @@ void CAdminControl::Draw() {
         while (nowV != NULL)
         {
             if (nowV->GetSelectVertexFlag() == true) {
-                if (MoveNowJudge == true) { //点を移動中
+                if (VertexMoveNowJudge == true) { //点を移動中
                     glColor3f(1.0, 0, 0); //赤
                 }
                 else { //点を選択
@@ -87,9 +93,32 @@ void CAdminControl::Draw() {
 
 void CAdminControl::AddShape()
 {
+   //CShape* newCShape = new CShape();
+   //newCShape->SetNextS(shape_head);
+   //shape_head = newCShape;
+
     CShape* newCShape = new CShape();
     newCShape->SetNextS(shape_head);
+
     shape_head = newCShape;
+    if (shape_head->GetNextS() != NULL) {
+        shape_head->GetNextS()->SetPreS(shape_head);
+    }
+}
+
+void CAdminControl::AddShape2()
+{
+    //CShape* newCShape = new CShape();
+    //newCShape->SetNextS(shape_head);
+    //shape_head = newCShape;
+
+    CShape* newCShape = new CShape();
+    newCShape->SetNextS(shape_head2);
+
+    shape_head2 = newCShape;
+    if (shape_head2->GetNextS() != NULL) {
+        shape_head2->GetNextS()->SetPreS(shape_head2);
+    }
 }
 
 //2点間の距離を求め返却する関数
@@ -108,14 +137,14 @@ float CAdminControl::Distance(CVertex* s, float x, float y)
 
 
 //自交差＆他交差の判定関数（交差していた場合true）
-bool CAdminControl::CrossJudge(CShape* startS, CVertex* startV, float x, float y)
+bool CAdminControl::CrossJudge(CShape* startS, CVertex* startV, float x1, float y1)
 {
     bool result = false;
     CVertex* nowV = startV;
     CVertex* s1;
     CVertex* s2;
     CVertex* g1;
-    CVertex* g2 = new CVertex(x, y);
+    CVertex* g2 = new CVertex(x1, y1);
     float G1;
     float G2;
     float G3;
@@ -138,7 +167,9 @@ bool CAdminControl::CrossJudge(CShape* startS, CVertex* startV, float x, float y
         G3 = Gaiseki(Vector(g1, g2), Vector(g1, s1));
         G4 = Gaiseki(Vector(g1, g2), Vector(g1, s2));
 
-        if (G1 * G2 <= 0 && G3 * G4 <= 0) {
+        if (G1 == 0 && G2 == 0 && G3 == 0 && G4 == 0) {
+            result = false;
+        }else if (G1 * G2 <= 0 && G3 * G4 <= 0) {
             result = true;
         }
     }
@@ -156,7 +187,7 @@ bool CAdminControl::CrossJudge(CShape* startS, CVertex* startV, float x, float y
             G4 = Gaiseki(Vector(g1, g2), Vector(g1, s2));
 
             if (G1 * G2 <= 0 && G3 * G4 <= 0) {
-                result = 1;
+                result = true;
             }
         }
     }
@@ -349,11 +380,11 @@ void CAdminControl::FreeMemory()
 void CAdminControl::CreateShape(float x, float y)
 {
 
-    ShapeCloseFlag = false;
 
     //点が何もないとき(1点目)
     if (shape_head == NULL) {
         AddShape();
+        ShapeCloseFlag = false;
         NoVertex = false;
     }
 
@@ -365,12 +396,17 @@ void CAdminControl::CreateShape(float x, float y)
         }
         //4点目以降の時閉じるか判定
         else if (Distance(shape_head->GetV(), x, y) <= 0.1) {
-            if (CrossJudge(shape_head, shape_head->GetV()->GetNext(), shape_head->GetV()->GetX(), shape_head->GetV()->GetY()) != true) {
+            //終点を始点につなげることでまたぐかどうか(自交差)
+            if (CrossJudge(shape_head, shape_head->GetV()->GetNext(), shape_head->GetV()->GetX(), shape_head->GetV()->GetY()) == true) {
+                //↑してる場合自交差してなければ閉じずに打つ
+                if (CrossJudge(shape_head, shape_head->GetV(), x, y) == false) {
+                    shape_head->AddVertex(x, y);
+                }
+            }//自交差(始点つなげたときの)してなければ閉じる
+            else {
                 shape_head->AddVertex(shape_head->GetV()->GetX(), shape_head->GetV()->GetY());
                 AddShape();
                 ShapeCloseFlag = true;
-            }else if (CrossJudge(shape_head, shape_head->GetV(), x, y) != true) {
-                shape_head->AddVertex(x, y);
             }
         }//交差判定
         else if (CrossJudge(shape_head, shape_head->GetV(), x, y) == true) {
@@ -441,33 +477,13 @@ void CAdminControl::DrawAxis()
 }
 
 //全削除する関数
-
 void CAdminControl::AllDelete()
 {
-    /*
+    
     if (shape_head != NULL) {
-        for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
-            int N = nowS->CountVertex();
-            for (int i = 0; i < N; i++) {
-                if (nowS->GetV() != NULL) {
-                    CVertex* pre_vp = NULL;
-                    CVertex* vp = nowS->GetV();
-                    while (vp->GetNext() != NULL) {
-                        pre_vp = vp;
-                        vp = vp->GetNext();
-                    }
-                    if (pre_vp != NULL) {
-                        pre_vp->SetNext(NULL);
-                    }
-                    else {
-                        delete vp;
-                        nowS->SetV_NULL();
-                    }
-                }
-            }
-        }
+        shape_head->FreeShape();
+        shape_head = NULL;
     }
-    */
 }
 
 //四角形を描画する関数
@@ -555,6 +571,8 @@ void CAdminControl::DrawStraight(float x, float y)
     float kakudo;
     CVertex* a = new CVertex(x, y);
     CVertex* preV = NULL;
+    CVertex* prepreV = NULL;
+
 
     //図形が何もないとき
     if (shape_head == NULL) {
@@ -565,18 +583,49 @@ void CAdminControl::DrawStraight(float x, float y)
     }
     else { //2点目以降の場合
         for (CVertex* nowV = shape_head->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+            prepreV = preV;
             preV = nowV;
         }
         CVertex* b = new CVertex(preV->GetX() + 0.5, preV->GetY());
         kakudo = Kakudo(Vector(preV, b), Vector(preV, a));
-        if (kakudo >= -2.356 && kakudo < -0.785) { //-45°～-135°
-            CreateShape(preV->GetX(), y);
+        if (kakudo >= -2.356 && kakudo < -0.785) { //-45°～-135°(y負方向)
+            if (prepreV == NULL) {
+                CreateShape(preV->GetX(), y);
+                StraightPreMove = 4;
+            }
+            else if (StraightPreMove != 3) {
+                CreateShape(preV->GetX(), y);
+                StraightPreMove = 4;
+            }
         }
-        else if (kakudo > 0.785 && kakudo <= 2.356) { //45°～135°
-            CreateShape(preV->GetX(), y);
+        else if (kakudo > 0.785 && kakudo <= 2.356) { //45°～135°(y正方向)
+            if (prepreV == NULL) {
+                CreateShape(preV->GetX(), y);
+                StraightPreMove = 3;
+            }else if(StraightPreMove != 4){
+                CreateShape(preV->GetX(), y);
+                StraightPreMove = 3;
+            }  
         }
-        else { //-45°～45°,135°～-135°
-            CreateShape(x, preV->GetY());
+        else if (kakudo > -0.785 && kakudo <= 0.785) { //-45°～45°(x正方向)
+            if (prepreV == NULL) {
+                CreateShape(x, preV->GetY());
+                StraightPreMove = 1;
+            }
+            else if (StraightPreMove != 2) {
+                CreateShape(x, preV->GetY());
+                StraightPreMove = 1;
+            }
+        }
+        else { //135°～-135°(x負方向)
+            if (prepreV == NULL) {
+                CreateShape(x, preV->GetY());
+                StraightPreMove = 2;
+            }
+            else if (StraightPreMove != 1) {
+                CreateShape(x, preV->GetY());
+                StraightPreMove = 2;
+            }
         }
     }
 
@@ -1018,11 +1067,17 @@ bool CAdminControl::GetShapeCloseFlag()
     return ShapeCloseFlag;
 }
 
+//ShapeCloseFlagをセットする関数
+void CAdminControl::SetShapeCloseFlag(bool f)
+{
+    ShapeCloseFlag = f;
+}
+
 //マウスがムーブした場所に点を描画
 void CAdminControl::DrawMoveVertex(float x, float y, float mx, float my)
 {
 
-    if (MoveNowJudge == false) {
+    if (VertexMoveNowJudge == false) {
         for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
             for (CVertex* nowV = nowS->GetV()->GetNext(); nowV != NULL; nowV = nowV->GetNext()) {
                 if (Distance(nowV, x, y) <= 0.05) {
@@ -1041,9 +1096,8 @@ void CAdminControl::DrawMoveVertex(float x, float y, float mx, float my)
 
     //もし選択済みの点がクリックされ、ホールドされてたら
     if (AlreadySelectVertexFlag == true) {
-        MoveNowJudge = true;
+        VertexMoveNowJudge = true;
         //始点もしくは終点を選んだ場合
-        //if (HoldV->GetVNumber() == HoldS->CountVertex()) {
         if (SameVertexJudge(HoldS->GetV(), HoldV) == true) {
             HoldS->GetV()->SetXY(mx, my);
             HoldV->SetXY(mx, my);
@@ -1056,16 +1110,16 @@ void CAdminControl::DrawMoveVertex(float x, float y, float mx, float my)
 }
 
 //今マウスが動いているかどうかを取得する関数
-bool CAdminControl::GetMoveNowJudge()
+bool CAdminControl::GetVertexMoveNowJudge()
 {
-    return MoveNowJudge;
+    return VertexMoveNowJudge;
 
 }
 
 //MoveNowJudgeをfalseにする関数
-void CAdminControl::ResetMoveNowJudge()
+void CAdminControl::ResetVertexMoveNowJudge()
 {
-    MoveNowJudge = false;
+    VertexMoveNowJudge = false;
 }
 
 //ホールドしてる点をリセットする関数
@@ -1094,11 +1148,11 @@ bool CAdminControl::VMoveCrossJudge()
             if (HoldS != nowS) {
                 //移動させた点が他のShapeの中にないか判定
                 if (NaihouJudge2(nowS, HoldV->GetX(), HoldV->GetY()) == true) {
-                    return false;
+                    return true;
                 }
                 //点が移動させたことによって、Shapeの中に他のShapeがないか判定
                 if (GaihouJudge2(nowS, HoldS) == true) {
-                    return false;
+                    return true;
                 }
             }
         }
@@ -1109,23 +1163,23 @@ bool CAdminControl::VMoveCrossJudge()
     for (CVertex* vp = HoldS->GetV()->GetNext(); vp != NULL; vp = vp->GetNext()) {
         if (vp == HoldV) {
             if (CrossJudge4(HoldV, preV) == true) {
-                return false;
+                return true;
             }
             if (HoldV->GetNext() != NULL) {
                 if (CrossJudge4(HoldV, HoldV->GetNext()) == true) {
-                    return false;
+                    return true;
                 }
             }
             else {
                 if (CrossJudge4(HoldV,HoldS->GetV()->GetNext()) == true) {
-                    return false;
+                    return true;
                 }
             }
         }
         preV = vp;
     }
 
-    return true;
+    return false;
 }
 
 //図形の中に図形があるか(外包していればtrueを返す)
@@ -1232,7 +1286,6 @@ bool CAdminControl::CrossJudge4(CVertex* s1, CVertex* g1)
 void CAdminControl::VMoveCancel()
 {
     //始点もしくは終点を選んだ場合
-    //if (HoldV->GetVNumber() == HoldS->CountVertex()) {
     if (SameVertexJudge(HoldS->GetV(), HoldV) == true) {
         HoldS->GetV()->SetXY(originX, originY);
         HoldV->SetXY(originX, originY);
@@ -1372,4 +1425,123 @@ bool CAdminControl::GaihouJudge3(CShape* HoldS, CVertex* del)
     }
 
     return false;
+}
+
+//マウスがムーブした場所にShapeを描画する関数
+bool CAdminControl::DrawMoveShape(float x, float y, float mx, float my)
+{
+
+    bool result = false;
+    float Center_X = 0;
+    float Center_Y = 0;
+    float Diff_X = 0;
+    float Diff_Y = 0;
+    int c = 0;
+
+    //選択したShapeをホールドする
+    if (ShapeMoveNowJudge == false) {
+        for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+            if (NaihouJudge2(nowS, x, y) == true) {
+                if (nowS->GetSelectShapeFlag() == true) {
+                    HoldS = nowS; //元の形状を保持(平行移動させる用)
+                    //CShape* shape_head2 = new CShape();
+                    AddShape2();
+                    for (CVertex* nowV = HoldS->GetV(); nowV != NULL; nowV = nowV->GetNext()) { //元の形状を保持(交差していた場合に元に戻す用)
+                        shape_head2->AddVertex(nowV->GetX(), nowV->GetY());
+                    }
+                    AlreadySelectShapeFlag = true;
+                    result = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    //もし選択済みのシェイプがクリックされ、ホールドされてたら
+    if (AlreadySelectShapeFlag == true) {
+        ShapeMoveNowJudge = true;
+
+        for (CVertex* nowV = HoldS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+            Center_X = Center_X + nowV->GetX();
+            Center_Y = Center_Y + nowV->GetY();
+            c++;
+        }
+
+        for (CVertex* nowV = HoldS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+
+            Diff_X = mx - (Center_X / c);
+            Diff_Y = my - (Center_Y / c);
+
+            nowV->SetXY(nowV->GetX() + Diff_X, nowV->GetY() + Diff_Y);
+        }
+    }
+
+    return result;
+}
+
+//Shape移動時の選択判定のフラグをリセットする関数
+void CAdminControl::ResetAlreadySelectShapeFlag()
+{
+    AlreadySelectShapeFlag = false;
+}
+
+bool CAdminControl::GetShapeMoveNowJudge()
+{
+    return ShapeMoveNowJudge;
+}
+
+void CAdminControl::ResetShapeMoveNowJudge()
+{
+    ShapeMoveNowJudge = false;
+}
+
+//移動させたShapeによって交差する箇所があるか
+bool CAdminControl::ShapeMoveCrossJudge()
+{
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+            if (HoldS != nowS) {
+                //点が移動させたことによって、Shapeの中に他のShapeがないか判定
+                if (GaihouJudge2(nowS, HoldS) == true) {
+                    return true;
+                }
+                if (NaihouJudge2(nowS, HoldS->GetV()->GetX(), HoldS->GetV()->GetY()) == true) {
+                    return true;
+                }
+            }
+    }
+
+    //交差判定
+    for (CVertex* nowHV = HoldS->GetV(); nowHV->GetNext() != NULL; nowHV = nowHV->GetNext()) {
+        if (CrossJudge4(nowHV, nowHV->GetNext()) == true) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//移動させたShapeによって交差していた場合、Shapeを元に戻す関数
+void CAdminControl::ShapeMoveCancel()
+{
+    /*
+    CVertex* nowV2 = HoldS2->GetV();
+
+    for (CVertex* nowV = shape_head->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+        nowV->SetXY(nowV2->GetX(), nowV2->GetY());
+        nowV2 = nowV2->GetNext();
+    }
+    */
+
+    CVertex* nowV2 = shape_head2->GetV();
+
+    for (CVertex* nowV = HoldS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+        nowV->SetXY(nowV2->GetX(), nowV2->GetY());
+        nowV2 = nowV2->GetNext();
+    }
+}
+
+//ResetHoldS2をリセットする関数
+void CAdminControl::Reset_shape_head2()
+{
+    shape_head2->OnlyFreeShape();
 }

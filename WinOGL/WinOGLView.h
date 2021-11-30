@@ -5,7 +5,7 @@
 #pragma once
 #include <gl/GL.h>
 #include "AdminControl.h"
-#include "Vertex.h"
+#include "pch.h"
 
 
 class CWinOGLView : public CView
@@ -46,7 +46,7 @@ private:
 	HGLRC m_hRC;
 	CAdminControl AC; //問8.1
 	CVertex V;
-
+	CShape S;
 
 public:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
@@ -57,15 +57,15 @@ public:
 private:
 
 	//左ボタンをクリックしたときのx,y座標
-	double clickX_L = 0;
-	double clickY_L = 0;
+	float clickX_L = 0;
+	float clickY_L = 0;
 
-	double clickX = 0;
-	double clickY = 0;
+	float clickX = 0;
+	float clickY = 0;
 
 	//マウスが移動中のときのx,y座標
-	double clickX_M = 0;
-	double clickY_M = 0;
+	float clickX_M = 0;
+	float clickY_M = 0;
 
 	bool LButtonDownFlag = false;
 
@@ -79,7 +79,6 @@ public:
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
 	afx_msg void OnAllDelete();
 	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
-	afx_msg void OnUpdateAllDelete(CCmdUI* pCmdUI);
 	afx_msg void OnSquare();
 	afx_msg void OnUpdateSquare(CCmdUI* pCmdUI);
 	afx_msg void OnStraight();

@@ -1,4 +1,5 @@
 #pragma once
+#include <Windows.h>
 #include "Vertex.h"
 
 class CShape{
@@ -15,6 +16,9 @@ private:
 
 	//次の形状リストを指すポインタ
 	CShape* next_shape = NULL;
+
+	//前の形状リストを指すポインタ
+	CShape* pre_shape = NULL;
 
 	bool SelectShapeFlag = false;
 
@@ -34,7 +38,16 @@ public:
 	//次の形状リストを指すポインタを読み込む
 	CShape* GetNextS();
 
+	//前の頂点リストを指すポインタを書き込む
+	CShape* SetPreS(CShape* new_preS);
+
+	//前の頂点リストを指すポインタを読み込む
+	CShape* GetPreS();
+
+	//形状をすべて削除
 	void FreeShape();
+	//与えた形状のみ削除
+	void OnlyFreeShape();
 
 	CVertex* AddVertex(float x, float y);
 	int CountVertex();

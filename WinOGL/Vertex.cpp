@@ -1,10 +1,17 @@
 #include "pch.h"
 #include "Vertex.h"
 
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#undef THIS_FILE
+static char THIS_FILE[] = __FILE__;
+#endif
+
+
 CVertex::CVertex()
 {
-	x = 0.0;
-	y = 0.0;
+	x = 0;
+	y = 0;
 	next_vertex = NULL;
 }
 
@@ -38,18 +45,10 @@ float CVertex::GetY()
 	return y;
 }
 
-//　頂点のXY座標を読み込む
-void CVertex::GetXY(float *d)
-{
-	d[0] = x;
-	d[1] = y;
-}
-
 //　次の頂点リストを指すポインタを書き込む
 CVertex* CVertex::SetNext(CVertex* new_next)
 {
-	next_vertex = new_next;
-	return next_vertex;
+	return next_vertex = new_next;
 
 }
 
@@ -123,9 +122,10 @@ void CVertex::FreeVertex()
 
 	while (nowV != NULL) {
 		CVertex* del_cell = nowV;
-		if (nowV->GetNext() != NULL) {
+		//if (nowV->GetNext() != NULL) {
 			nowV = nowV->GetNext();
 			delete del_cell;
-		}
+		//}
 	}
+
 }
