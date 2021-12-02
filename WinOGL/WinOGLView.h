@@ -56,16 +56,21 @@ public:
 
 private:
 
-	//左ボタンをクリックしたときのx,y座標
-	float clickX_L = 0;
-	float clickY_L = 0;
 
 	float clickX = 0;
 	float clickY = 0;
 
+	//左ボタンを押下したときのx,y座標
+	float clickX_L = 0;
+	float clickY_L = 0;
+
 	//マウスが移動中のときのx,y座標
 	float clickX_M = 0;
 	float clickY_M = 0;
+
+	//マウス中央ボタンが押下されたときのx,y座標
+	float clickX_C = 0;
+	float clickY_C = 0;
 
 	bool LButtonDownFlag = false;
 
@@ -83,6 +88,8 @@ public:
 	afx_msg void OnUpdateSquare(CCmdUI* pCmdUI);
 	afx_msg void OnStraight();
 	afx_msg void OnUpdateStraight(CCmdUI* pCmdUI);
+	afx_msg void OnMouseHWheel(UINT nFlags, short zDelta, CPoint pt);
+	afx_msg void OnMButtonDown(UINT nFlags, CPoint point);
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン

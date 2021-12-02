@@ -31,7 +31,7 @@ void CAdminControl::Draw() {
         while (nowV != NULL)
         {
             if (nowV->GetSelectVertexFlag() == true) {
-                if (VertexMoveNowJudge == true) { //点を移動中
+                if (VertexMoveNowJudge == true || ShapeMoveNowJudge == true) { //点または形状が移動中
                     glColor3f(1.0, 0, 0); //赤
                 }
                 else { //点を選択
@@ -88,19 +88,19 @@ void CAdminControl::Draw() {
         DrawAxis();
     }
 
+    if (WheelButtonFlag == true) {
+        DrawBasePoint(0.5,0.5);
+    }
+
 }
 
 
 void CAdminControl::AddShape()
 {
-   //CShape* newCShape = new CShape();
-   //newCShape->SetNextS(shape_head);
-   //shape_head = newCShape;
-
     CShape* newCShape = new CShape();
     newCShape->SetNextS(shape_head);
-
     shape_head = newCShape;
+
     if (shape_head->GetNextS() != NULL) {
         shape_head->GetNextS()->SetPreS(shape_head);
     }
@@ -149,6 +149,7 @@ bool CAdminControl::CrossJudge(CShape* startS, CVertex* startV, float x1, float 
     float G2;
     float G3;
     float G4;
+   
 
     //最後尾まで送り打ちたい点の1つ前をg1に保存
     while (nowV->GetNext() != NULL)
@@ -192,6 +193,7 @@ bool CAdminControl::CrossJudge(CShape* startS, CVertex* startV, float x1, float 
         }
     }
 
+    delete g2;
 
     return result;
 }
@@ -235,7 +237,7 @@ bool CAdminControl::CrossJudge2(CShape* startS, CVertex* startV, float x, float 
         }
     }
 
-
+    delete g2;
     return result;
 }
 
@@ -262,9 +264,13 @@ bool CAdminControl::NaihouJudge(CShape* startS, float x, float y)
 
     //内包していればtrueを返す
     if (sum < 0.001 && sum > -0.001) {//内包してなければ
+        delete s1;
+        delete s2;
         return  false;
     }
     else {//内包してれば
+        delete s1;
+        delete s2;
         return true;
     }
 
@@ -277,7 +283,7 @@ bool CAdminControl::GaihouJudge(CShape* startS, float x, float y)
     CVertex* outV_N = NULL;
     CVertex* a;
     CVertex* b;
-    CVertex* Q;
+    CVertex* Q = NULL;
     float sum = 0;
     int c = 0;
 
@@ -306,10 +312,12 @@ bool CAdminControl::GaihouJudge(CShape* startS, float x, float y)
             }
         }
         if (c == sp->CountVertex() ){
+            delete Q;
             return true;
         }
     }
 
+    delete Q;
     return false;
 }
 
@@ -381,10 +389,9 @@ void CAdminControl::CreateShape(float x, float y)
 {
 
 
-    //点が何もないとき(1点目)
+    //形状が何もないとき
     if (shape_head == NULL) {
         AddShape();
-        ShapeCloseFlag = false;
         NoVertex = false;
     }
 
@@ -393,6 +400,7 @@ void CAdminControl::CreateShape(float x, float y)
         //3点打つまでは追加
         if (shape_head->CountVertex() < 3) {
             shape_head->AddVertex(x, y);
+            ShapeCloseFlag = false;
         }
         //4点目以降の時閉じるか判定
         else if (Distance(shape_head->GetV(), x, y) <= 0.1) {
@@ -419,7 +427,6 @@ void CAdminControl::CreateShape(float x, float y)
     //図形が2つ目以降の時
     else if (NaihouJudge(shape_head, x, y) == true) {
         //内包していれば何もしない
-        ShapeCloseFlag = true;
     }
     //1点目は
     else if (shape_head->CountVertex() < 1) {
@@ -433,6 +440,7 @@ void CAdminControl::CreateShape(float x, float y)
         }//閉じてなくて交差してなければそのまま追加
         else {
             shape_head->AddVertex(x, y);
+            ShapeCloseFlag = false;
         }
     }
     //4点目以降の時閉じるか判定
@@ -489,7 +497,10 @@ void CAdminControl::AllDelete()
 //四角形を描画する関数
 void CAdminControl::DrawSquare(float x1, float y1, float x2, float y2)
 {
-
+    CVertex* a = NULL;
+    CVertex* b = NULL;
+    CVertex* c = NULL;
+    CVertex* d = NULL;
     float diff_x = x1 - x2;
     float diff_y = y1 - y2;
     bool f = false;
@@ -504,10 +515,10 @@ void CAdminControl::DrawSquare(float x1, float y1, float x2, float y2)
                 f = true;
             }
             else { //図形が2つ目以降のとき
-                CVertex* a = new CVertex(x1, y1);
-                CVertex* b = new CVertex(x2, y1);
-                CVertex* c = new CVertex(x2, y2);
-                CVertex* d = new CVertex(x1, y2);
+                a = new CVertex(x1, y1);
+                b = new CVertex(x2, y1);
+                c = new CVertex(x2, y2);
+                d = new CVertex(x1, y2);
 
                 //外包判定
                 for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
@@ -535,6 +546,11 @@ void CAdminControl::DrawSquare(float x1, float y1, float x2, float y2)
             }
         }
     }
+
+    delete a;
+    delete b;
+    delete c;
+    delete d;
 
 }
 
@@ -570,6 +586,7 @@ void CAdminControl::DrawStraight(float x, float y)
 
     float kakudo;
     CVertex* a = new CVertex(x, y);
+    CVertex* b = NULL;
     CVertex* preV = NULL;
     CVertex* prepreV = NULL;
 
@@ -586,7 +603,7 @@ void CAdminControl::DrawStraight(float x, float y)
             prepreV = preV;
             preV = nowV;
         }
-        CVertex* b = new CVertex(preV->GetX() + 0.5, preV->GetY());
+        b = new CVertex(preV->GetX() + 0.5, preV->GetY());
         kakudo = Kakudo(Vector(preV, b), Vector(preV, a));
         if (kakudo >= -2.356 && kakudo < -0.785) { //-45°～-135°(y負方向)
             if (prepreV == NULL) {
@@ -628,6 +645,8 @@ void CAdminControl::DrawStraight(float x, float y)
             }
         }
     }
+    delete a;
+    delete b;
 
 }
 
@@ -707,9 +726,13 @@ bool CAdminControl::NaihouJudge2(CShape* nowS, float x, float y)
 
         //内包していれば、trueを返す
         if (sum < 0.001 && sum > -0.001) {//内包してなければ
+            delete s1;
+            delete s2;
             return  false;
         }
         else {//内包してれば
+            delete s1;
+            delete s2;
             return true;
         }
 
@@ -1028,9 +1051,11 @@ int CAdminControl::SelectLine(float x, float y)
     }
 
     if (c > 0) {
+        delete vp;
         return 1;
     }
     else {
+        delete vp;
         return 0;
     }
 }
@@ -1187,7 +1212,7 @@ bool CAdminControl::GaihouJudge2(CShape* nowS, CShape* HoldS)
 {
     CVertex* nowV = HoldS->GetV();
     CVertex* outV_N = NULL;
-    CVertex* Q;
+    CVertex* Q = NULL;
     float sum = 0;
     int c = 0;
 
@@ -1213,9 +1238,11 @@ bool CAdminControl::GaihouJudge2(CShape* nowS, CShape* HoldS)
         }
     }
     if (c == nowS->CountVertex()) {
+        delete Q;
         return true;
     }
 
+    delete Q;
     return false;
 }
 
@@ -1341,7 +1368,7 @@ void CAdminControl::InsertVertex(float x, float y)
 }
 
 //左クリックで点を削除する関数
-void CAdminControl::DeleteVertex(float x, float y)
+int CAdminControl::DeleteVertex(float x, float y)
 {
 
     //各図形と各点を見ていく
@@ -1372,13 +1399,14 @@ void CAdminControl::DeleteVertex(float x, float y)
                                 }
                             }
                         }
-                        break;
+                        return 1;
                     }
                 }
             }
             pre_vp = nowV;
         }
     }
+    return 0;
 }
 
 //図形の中に図形があるか(引数に削除する予定の点を与える)
@@ -1427,6 +1455,29 @@ bool CAdminControl::GaihouJudge3(CShape* HoldS, CVertex* del)
     return false;
 }
 
+//左クリックで形状を削除する関数
+void CAdminControl::DeleteShape(float x, float y)
+{
+    CShape* preS = shape_head;
+
+    //各図形を見ていく
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        //形状が選択されている場合のみ有効
+        if (nowS->GetSelectShapeFlag() == true) {
+            if (nowS->GetNextS() != NULL) {
+                preS->SetNextS(nowS->GetNextS()); //削除する形状の前と後を繋げる
+                nowS->OnlyFreeShape();
+            }
+            else {
+                preS->SetNextS(NULL); //削除する形状の前をNULLに繋げる
+                nowS->OnlyFreeShape();
+            }
+            break;
+        }
+        preS = nowS;
+    }
+}
+
 //マウスがムーブした場所にShapeを描画する関数
 bool CAdminControl::DrawMoveShape(float x, float y, float mx, float my)
 {
@@ -1444,7 +1495,6 @@ bool CAdminControl::DrawMoveShape(float x, float y, float mx, float my)
             if (NaihouJudge2(nowS, x, y) == true) {
                 if (nowS->GetSelectShapeFlag() == true) {
                     HoldS = nowS; //元の形状を保持(平行移動させる用)
-                    //CShape* shape_head2 = new CShape();
                     AddShape2();
                     for (CVertex* nowV = HoldS->GetV(); nowV != NULL; nowV = nowV->GetNext()) { //元の形状を保持(交差していた場合に元に戻す用)
                         shape_head2->AddVertex(nowV->GetX(), nowV->GetY());
@@ -1523,15 +1573,6 @@ bool CAdminControl::ShapeMoveCrossJudge()
 //移動させたShapeによって交差していた場合、Shapeを元に戻す関数
 void CAdminControl::ShapeMoveCancel()
 {
-    /*
-    CVertex* nowV2 = HoldS2->GetV();
-
-    for (CVertex* nowV = shape_head->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
-        nowV->SetXY(nowV2->GetX(), nowV2->GetY());
-        nowV2 = nowV2->GetNext();
-    }
-    */
-
     CVertex* nowV2 = shape_head2->GetV();
 
     for (CVertex* nowV = HoldS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
@@ -1540,8 +1581,49 @@ void CAdminControl::ShapeMoveCancel()
     }
 }
 
-//ResetHoldS2をリセットする関数
+//shape_head2をリセットする関数
 void CAdminControl::Reset_shape_head2()
 {
     shape_head2->OnlyFreeShape();
+}
+
+//WheelButtonFlagをセットする関数
+void CAdminControl::SetWheelButtonFlag(bool f)
+{
+    if (WheelButtonFlag == false) {
+        for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+            if (nowS->GetSelectShapeFlag() == true) {
+                WheelButtonFlag = true;
+            }
+        }
+    }
+    else {
+        for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+            if (nowS->GetSelectShapeFlag() == true) {
+                WheelButtonFlag = false;
+            }
+        }
+    }
+}
+
+//WheelButtonFlagを取得する関数
+bool CAdminControl::GetWheelButtonFlag()
+{
+    return WheelButtonFlag;
+}
+
+//図形を拡大する基点を描画する関数
+void CAdminControl::DrawBasePoint(float x, float y)
+{
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        if (nowS->GetSelectShapeFlag() == true) {
+            glColor3f(1.0, 0, 0);
+            glPointSize(10);
+            glBegin(GL_POINTS);
+            glVertex2f(x, y);
+            glEnd();
+            HoldS = nowS;
+            break;
+        }
+    }
 }

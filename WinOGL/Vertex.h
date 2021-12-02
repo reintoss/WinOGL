@@ -10,9 +10,9 @@ public:
 	~CVertex();
 private:
 	//　頂点のX座標
-	float x = 0;
+	float x = 0.0;
 	//　頂点のY座標
-	float y = 0;
+	float y = 0.0;
 	//int VNumber = 1;
 
 	//　次の頂点リストを指すポインタ

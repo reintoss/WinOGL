@@ -135,7 +135,7 @@ public:
 	//被選択のフラグをリセットする関数
 	void NotSelectFlagReset();
 	//描画した図形たちが閉じているかのフラグ
-	bool ShapeCloseFlag = false;
+	bool ShapeCloseFlag = true;
 	//ShapeCloseFlagを取得する関数（WinOGLView.cppで使うために関数にする）
 	bool GetShapeCloseFlag();
 	//ShapeCloseFlagをセットする関数
@@ -177,9 +177,11 @@ public:
 	void InsertVertex(float x, float y);
 
 	//左クリックで点を削除する関数
-	void DeleteVertex(float x, float y);
+	int DeleteVertex(float x, float y);
 	//図形の中に図形があるか(引数に削除する予定の点を与える)
 	bool GaihouJudge3(CShape* HoldS, CVertex* del);
+	//左クリックで形状を削除する関数
+	void DeleteShape(float x, float y);
 
 	//マウスがムーブした場所にShapeを描画する関数
 	bool DrawMoveShape(float x, float y, float mx, float my);
@@ -197,10 +199,16 @@ public:
 	bool ShapeMoveCrossJudge();
 	//移動させたShapeによって交差していた場合、Shapeを元に戻す関数
 	void ShapeMoveCancel();
-	//Shape移動をキャンセルした場合に使用
-	CShape* HoldS2 = NULL;
-	//ResetHoldS2をリセットする関数
+	//shape_head2をリセットする関数
 	void Reset_shape_head2();
+
+	//マウスの中央ボタンが押下されたか
+	bool WheelButtonFlag = false;
+	//WheelButtonFlagをセット・取得する関数
+	void SetWheelButtonFlag(bool f);
+	bool GetWheelButtonFlag();
+	//図形を拡大する基点を描画する関数
+	void DrawBasePoint(float x, float y);
 };
 
 

@@ -10,8 +10,8 @@ static char THIS_FILE[] = __FILE__;
 
 CVertex::CVertex()
 {
-	x = 0;
-	y = 0;
+	x = 0.0;
+	y = 0.0;
 	next_vertex = NULL;
 }
 
@@ -118,14 +118,22 @@ int CVertex::GetVNumber()
 
 void CVertex::FreeVertex()
 {
-	CVertex* nowV = this;
 
+	CVertex* nowV = this;
 	while (nowV != NULL) {
 		CVertex* del_cell = nowV;
-		//if (nowV->GetNext() != NULL) {
-			nowV = nowV->GetNext();
-			delete del_cell;
-		//}
+		nowV = nowV->GetNext();
+		delete del_cell;
 	}
 
+	/*
+	CVertex* nowV = this;
+	while (nowV != NULL) {
+		CVertex* del_cell = nowV;
+		if (nowV->GetNext() != NULL) {
+		nowV = nowV->GetNext();
+		delete del_cell;
+		}
+	}
+	*/
 }
