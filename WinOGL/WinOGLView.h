@@ -56,11 +56,11 @@ public:
 
 private:
 
-
+	//左ボタンが離された,ダブルクリックした、右ボタンが押下されたときのx,y座標
 	float clickX = 0;
 	float clickY = 0;
 
-	//左ボタンを押下したときのx,y座標
+	//左ボタンが押下されたときのx,y座標
 	float clickX_L = 0;
 	float clickY_L = 0;
 
@@ -88,8 +88,8 @@ public:
 	afx_msg void OnUpdateSquare(CCmdUI* pCmdUI);
 	afx_msg void OnStraight();
 	afx_msg void OnUpdateStraight(CCmdUI* pCmdUI);
-	afx_msg void OnMouseHWheel(UINT nFlags, short zDelta, CPoint pt);
 	afx_msg void OnMButtonDown(UINT nFlags, CPoint point);
+	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン

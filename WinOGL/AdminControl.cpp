@@ -31,7 +31,7 @@ void CAdminControl::Draw() {
         while (nowV != NULL)
         {
             if (nowV->GetSelectVertexFlag() == true) {
-                if (VertexMoveNowJudge == true || ShapeMoveNowJudge == true) { //点または形状が移動中
+                if (VertexMoveNowJudge == true) { //点が移動中
                     glColor3f(1.0, 0, 0); //赤
                 }
                 else { //点を選択
@@ -194,7 +194,6 @@ bool CAdminControl::CrossJudge(CShape* startS, CVertex* startV, float x1, float 
     }
 
     delete g2;
-
     return result;
 }
 
@@ -324,7 +323,14 @@ bool CAdminControl::GaihouJudge(CShape* startS, float x, float y)
 
 CVertex* CAdminControl::Vector(CVertex* a, CVertex* b)
 {
-    CVertex* result = new CVertex(b->GetX() - a->GetX(), b->GetY() - a->GetY());
+    //CVertex* result = new CVertex(b->GetX() - a->GetX(), b->GetY() - a->GetY());
+
+    CVertex* result = NULL;
+
+    float X = b->GetX() - a->GetX();
+    float Y = b->GetY() - a->GetY();
+
+    result = new CVertex(X, Y);
 
     return result;
 }
@@ -487,11 +493,15 @@ void CAdminControl::DrawAxis()
 //全削除する関数
 void CAdminControl::AllDelete()
 {
-    
     if (shape_head != NULL) {
         shape_head->FreeShape();
         shape_head = NULL;
     }
+    if (shape_head2 != NULL) {
+        shape_head2->FreeShape();
+        shape_head2 = NULL;
+    }
+    NoVertex = true;
 }
 
 //四角形を描画する関数
@@ -700,6 +710,7 @@ void CAdminControl::SelectShape(float x, float y)
                 if (nowS->GetSelectShapeFlag() == false) {
                     NotSelectFlagReset();
                     nowS->SetSelectShapeFlag(true);
+                    WheelButtonFlag = false;
                 }
                 else {
                     nowS->SetSelectShapeFlag(false);
@@ -795,7 +806,12 @@ void CAdminControl::DrawShape(CShape* nowS)
     */
 
     //点と線を全て色変え
-    glColor3f(0, 1.0, 1.0); //シアン
+    if (ShapeMoveNowJudge == false) {
+        glColor3f(0, 1.0, 1.0); //シアン
+    }
+    else { //形状が移動中のとき
+        glColor3f(1.0, 0, 0); //赤
+    }
     glPointSize(10);
     glBegin(GL_POINTS); //点
     for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
@@ -803,7 +819,12 @@ void CAdminControl::DrawShape(CShape* nowS)
     }
     glEnd();
 
-    glColor3f(0, 1.0, 1.0); //シアン
+    if (ShapeMoveNowJudge == false) {
+        glColor3f(0, 1.0, 1.0); //シアン
+    }
+    else { //形状が移動中のとき
+        glColor3f(1.0, 0, 0); //赤
+    }
     glLineWidth(1);
     glBegin(GL_LINE_STRIP); //線
     for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
@@ -1495,6 +1516,7 @@ bool CAdminControl::DrawMoveShape(float x, float y, float mx, float my)
             if (NaihouJudge2(nowS, x, y) == true) {
                 if (nowS->GetSelectShapeFlag() == true) {
                     HoldS = nowS; //元の形状を保持(平行移動させる用)
+                    Reset_shape_head2();
                     AddShape2();
                     for (CVertex* nowV = HoldS->GetV(); nowV != NULL; nowV = nowV->GetNext()) { //元の形状を保持(交差していた場合に元に戻す用)
                         shape_head2->AddVertex(nowV->GetX(), nowV->GetY());
@@ -1584,7 +1606,8 @@ void CAdminControl::ShapeMoveCancel()
 //shape_head2をリセットする関数
 void CAdminControl::Reset_shape_head2()
 {
-    shape_head2->OnlyFreeShape();
+    shape_head2->FreeShape();
+    shape_head2 = NULL;
 }
 
 //WheelButtonFlagをセットする関数
@@ -1617,13 +1640,77 @@ void CAdminControl::DrawBasePoint(float x, float y)
 {
     for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
         if (nowS->GetSelectShapeFlag() == true) {
-            glColor3f(1.0, 0, 0);
+            glColor3f(0, 1.0, 0); //緑
             glPointSize(10);
             glBegin(GL_POINTS);
-            glVertex2f(x, y);
+            glVertex2f(clickX_C, clickY_C);
             glEnd();
-            HoldS = nowS;
-            break;
         }
     }
+}
+
+//clickX_C,clickY_Cをセットする関数
+void CAdminControl::SetclickXY_C(float x, float y)
+{
+    clickX_C = x;
+    clickY_C = y;
+}
+
+//形状を拡大・縮小する関数
+void CAdminControl::DrawExpansionShape(short zDelta)
+{
+    float k; //倍数
+    float a, b;
+    int f = 0;
+
+    if (zDelta > 0) {
+        k = 1.1;
+    }
+    else {
+        k = 0.9;
+    }
+
+        for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+            if (nowS->GetSelectShapeFlag() == true) {
+                Reset_shape_head2();
+                AddShape2();
+                for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+                    shape_head2->AddVertex(nowV->GetX(), nowV->GetY());
+                    a = k * (nowV->GetX() - clickX_C) + clickX_C;
+                    b = k * (nowV->GetY() - clickY_C) + clickY_C;
+                    nowV->SetXY(a, b);
+                }
+                HoldS = nowS;
+                break;
+            }
+        }
+
+}
+
+//拡大・縮小によって形状が交差した場合、元に戻す関数
+void CAdminControl::ShapeExepansionCancel()
+{
+    float k = 0.9; //倍数
+    float a, b;
+
+    for (CVertex* nowV = HoldS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+        a = k * (nowV->GetX() - clickX_C) + clickX_C;
+        b = k * (nowV->GetY() - clickY_C) + clickY_C;
+        nowV->SetXY(a, b);
+    }
+}
+
+//縮小しすぎを防ぐ(問題なしならfalse)
+bool CAdminControl::ExpansionJudge()
+{
+
+    for (CVertex* nowV = HoldS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+        if (nowV != HoldS->GetV()) {
+            if (Distance(nowV, HoldS->GetV()->GetX(), HoldS->GetV()->GetY()) <= 0.05) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }

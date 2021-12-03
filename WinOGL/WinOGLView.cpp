@@ -47,8 +47,9 @@ ON_UPDATE_COMMAND_UI(ID_SQUARE, &CWinOGLView::OnUpdateSquare)
 //ON_UPDATE_COMMAND_UI(ID_STRAIGHT, &CWinOGLView::OnUpdateStraight)
 ON_COMMAND(ID_STRAIGHT, &CWinOGLView::OnStraight)
 ON_UPDATE_COMMAND_UI(ID_STRAIGHT, &CWinOGLView::OnUpdateStraight)
-ON_WM_MOUSEHWHEEL()
+//ON_WM_MOUSEHWHEEL()
 ON_WM_MBUTTONDOWN()
+ON_WM_MOUSEWHEEL()
 END_MESSAGE_MAP()
 
 // CWinOGLView コンストラクション/デストラクション
@@ -200,7 +201,6 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 		else if (AC.GetShapeMoveNowJudge() == true) {
 			if (AC.ShapeMoveCrossJudge() == true) {
 				AC.ShapeMoveCancel();
-				AC.Reset_shape_head2();
 			}
 		}
 	}
@@ -348,7 +348,7 @@ int CWinOGLView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 void CWinOGLView::OnDestroy()
 {
 	CView::OnDestroy();
-	//AC.FreeMemory();
+	AC.Reset_shape_head2();
 	wglDeleteContext(m_hRC);
 
 }
@@ -515,21 +515,15 @@ void CWinOGLView::OnUpdateStraight(CCmdUI* pCmdUI)
 
 void CWinOGLView::OnAllDelete()
 {
-	AC.AllDelete();
-	AC.SetShapeCloseFlag(false);
-	if (AC.SelectButtonFlag == true) {
-		AC.SelectButtonFlag = false;
+	if (AC.GetWheelButtonFlag()==false) {
+		AC.AllDelete();
+		AC.SetShapeCloseFlag(false);
+		if (AC.SelectButtonFlag == true) {
+			AC.SelectButtonFlag = false;
+		}
 	}
 	RedrawWindow();
 }
-
-void CWinOGLView::OnMouseHWheel(UINT nFlags, short zDelta, CPoint pt)
-{
-	
-
-	CView::OnMouseHWheel(nFlags, zDelta, pt);
-}
-
 
 void CWinOGLView::OnMButtonDown(UINT nFlags, CPoint point)
 {
@@ -551,6 +545,7 @@ void CWinOGLView::OnMButtonDown(UINT nFlags, CPoint point)
 
 	if (AC.SelectButtonFlag == true) {
 		if (AC.GetWheelButtonFlag() == false) {
+			AC.SetclickXY_C(clickX_C, clickY_C);
 			AC.SetWheelButtonFlag(true);
 		}
 		else {
@@ -561,4 +556,24 @@ void CWinOGLView::OnMButtonDown(UINT nFlags, CPoint point)
 	RedrawWindow();
 
 	CView::OnMButtonDown(nFlags, point);
+}
+
+
+BOOL CWinOGLView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+	//基点が追加されていたら
+	if (AC.GetWheelButtonFlag() == true) {
+		AC.DrawExpansionShape(zDelta);
+		if (AC.ShapeMoveCrossJudge() == true) {
+			AC.ShapeMoveCancel();
+		}else if(AC.ExpansionJudge()==true){
+			AC.ShapeMoveCancel();
+		}
+	}
+
+	AC.ResetHoldS();
+
+	RedrawWindow();
+
+	return CView::OnMouseWheel(nFlags, zDelta, pt);
 }

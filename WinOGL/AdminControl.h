@@ -209,6 +209,17 @@ public:
 	bool GetWheelButtonFlag();
 	//図形を拡大する基点を描画する関数
 	void DrawBasePoint(float x, float y);
+	//マウス中央ボタンが押下されたときのx,y座標
+	float clickX_C = 0;
+	float clickY_C = 0;
+	//clickX_C,clickY_Cをセットする関数
+	void SetclickXY_C(float x, float y);
+	//形状を拡大・縮小する関数
+	void DrawExpansionShape(short zDelta);
+	//拡大・縮小によって形状が交差した場合、元に戻す関数
+	void ShapeExepansionCancel();
+	//縮小しすぎを防ぐ
+	bool ExpansionJudge();
 };
 
 
