@@ -163,10 +163,10 @@ bool CAdminControl::CrossJudge(CShape* startS, CVertex* startV, float x1, float 
         s1 = vp;
         s2 = vp->GetNext();
 
-        G1 = Gaiseki(Vector(s1, s2), Vector(s1, g1));
-        G2 = Gaiseki(Vector(s1, s2), Vector(s1, g2));
-        G3 = Gaiseki(Vector(g1, g2), Vector(g1, s1));
-        G4 = Gaiseki(Vector(g1, g2), Vector(g1, s2));
+        G1 = Gaiseki(VectorX(s1, s2), VectorY(s1, s2), VectorX(s1, g1), VectorY(s1, g1));
+        G2 = Gaiseki(VectorX(s1, s2), VectorY(s1, s2), VectorX(s1, g2), VectorY(s1, g2));
+        G3 = Gaiseki(VectorX(g1, g2), VectorY(g1, g2), VectorX(g1, s1), VectorY(g1, s1));
+        G4 = Gaiseki(VectorX(g1, g2), VectorY(g1, g2), VectorX(g1, s2), VectorY(g1, s2));
 
         if (G1 == 0 && G2 == 0 && G3 == 0 && G4 == 0) {
             result = false;
@@ -182,10 +182,10 @@ bool CAdminControl::CrossJudge(CShape* startS, CVertex* startV, float x1, float 
             s1 = vp;
             s2 = vp->GetNext();
 
-            G1 = Gaiseki(Vector(s1, s2), Vector(s1, g1));
-            G2 = Gaiseki(Vector(s1, s2), Vector(s1, g2));
-            G3 = Gaiseki(Vector(g1, g2), Vector(g1, s1));
-            G4 = Gaiseki(Vector(g1, g2), Vector(g1, s2));
+            G1 = Gaiseki(VectorX(s1, s2), VectorY(s1, s2), VectorX(s1, g1), VectorY(s1, g1));
+            G2 = Gaiseki(VectorX(s1, s2), VectorY(s1, s2), VectorX(s1, g2), VectorY(s1, g2));
+            G3 = Gaiseki(VectorX(g1, g2), VectorY(g1, g2), VectorX(g1, s1), VectorY(g1, s1));
+            G4 = Gaiseki(VectorX(g1, g2), VectorY(g1, g2), VectorX(g1, s2), VectorY(g1, s2));
 
             if (G1 * G2 <= 0 && G3 * G4 <= 0) {
                 result = true;
@@ -225,10 +225,10 @@ bool CAdminControl::CrossJudge2(CShape* startS, CVertex* startV, float x, float 
             s1 = vp;
             s2 = vp->GetNext();
 
-            G1 = Gaiseki(Vector(s1, s2), Vector(s1, g1));
-            G2 = Gaiseki(Vector(s1, s2), Vector(s1, g2));
-            G3 = Gaiseki(Vector(g1, g2), Vector(g1, s1));
-            G4 = Gaiseki(Vector(g1, g2), Vector(g1, s2));
+            G1 = Gaiseki(VectorX(s1, s2), VectorY(s1, s2), VectorX(s1, g1), VectorY(s1, g1));
+            G2 = Gaiseki(VectorX(s1, s2), VectorY(s1, s2), VectorX(s1, g2), VectorY(s1, g2));
+            G3 = Gaiseki(VectorX(g1, g2), VectorY(g1, g2), VectorX(g1, s1), VectorY(g1, s1));
+            G4 = Gaiseki(VectorX(g1, g2), VectorY(g1, g2), VectorX(g1, s2), VectorY(g1, s2));
 
             if (G1 * G2 <= 0 && G3 * G4 <= 0) {
                 result = true;
@@ -257,7 +257,7 @@ bool CAdminControl::NaihouJudge(CShape* startS, float x, float y)
         for (CVertex* vp = sp->GetV(); vp->GetNext() != NULL; vp = vp->GetNext()) {
             g1 = vp;
             //2線分のなす角の総和
-            sum = sum + Kakudo(Vector(s1, g1), Vector(s2, g1->GetNext()));
+            sum = sum + Kakudo(VectorX(s1, g1), VectorY(s1, g1), VectorX(s2, g1->GetNext()), VectorY(s2, g1->GetNext()));
         }
     }
 
@@ -285,6 +285,7 @@ bool CAdminControl::GaihouJudge(CShape* startS, float x, float y)
     CVertex* Q = NULL;
     float sum = 0;
     int c = 0;
+    bool result = false;
 
     //外側の図形以外を見ていく
     for (CShape* sp = startS->GetNextS(); sp != NULL; sp = sp->GetNextS()) {
@@ -301,23 +302,22 @@ bool CAdminControl::GaihouJudge(CShape* startS, float x, float y)
                 outV_N = outvp->GetNext();
 
                 //2線分のなす角の総和
-                sum = sum + Kakudo(Vector(Q, outvp), Vector(Q, outvp->GetNext()));
+                sum = sum + Kakudo(VectorX(Q, outvp), VectorY(Q, outvp), VectorX(Q, outvp->GetNext()), VectorY(Q, outvp->GetNext()));
 
             }
-            sum = sum + Kakudo(Vector(Q, outV_N), Vector(Q, nowV));
+            sum = sum + Kakudo(VectorX(Q, outV_N), VectorY(Q, outV_N), VectorX(Q, nowV), VectorY(Q, nowV));
 
             if (sum > 0.001 || sum < -0.001) {//内包している場合
                 c++;
             }
+            delete Q;
         }
         if (c == sp->CountVertex() ){
-            delete Q;
-            return true;
+            result = true;
         }
     }
 
-    delete Q;
-    return false;
+    return result;
 }
 
 
@@ -335,11 +335,34 @@ CVertex* CAdminControl::Vector(CVertex* a, CVertex* b)
     return result;
 }
 
+float CAdminControl::VectorX(CVertex* a, CVertex* b)
+{
+    float X = b->GetX() - a->GetX();
+
+    return X;
+}
+
+float CAdminControl::VectorY(CVertex* a, CVertex* b)
+{
+    float Y = b->GetY() - a->GetY();
+
+    return Y;
+}
+
 float CAdminControl::Gaiseki(CVertex* a, CVertex* b)
 {
     float result;
 
     result = (a->GetX() * b->GetY()) - (a->GetY() * b->GetX());
+
+    return result;
+}
+
+float CAdminControl::Gaiseki(float ax, float ay, float bx, float by)
+{
+    float result;
+
+    result = (ax * by) - (ay * bx);
 
     return result;
 }
@@ -353,6 +376,15 @@ float CAdminControl::Naiseki(CVertex* a, CVertex* b)
     return result;
 }
 
+float CAdminControl::Naiseki(float ax, float ay, float bx, float by)
+{
+    float result;
+
+    result = (ax * bx) + (ay * by);
+
+    return result;
+}
+
 float CAdminControl::Kakudo(CVertex* a, CVertex* b)
 {
     float result;
@@ -362,6 +394,17 @@ float CAdminControl::Kakudo(CVertex* a, CVertex* b)
     /*if (gaiseki < 0) {
         gaiseki = gaiseki * -1;
     }*/
+
+    result = atan2(gaiseki, naiseki);
+
+    return result;
+}
+
+float CAdminControl::Kakudo(float ax, float ay, float bx, float by)
+{
+    float result;
+    float gaiseki = Gaiseki(ax, ay, bx, by);
+    float naiseki = Naiseki(ax, ay, bx, by);
 
     result = atan2(gaiseki, naiseki);
 
@@ -578,8 +621,13 @@ bool CAdminControl::GaihouJudge5(CShape* nowS, CVertex* a, CVertex* b, CVertex* 
 
     CVertex* V = nowS->GetV(); //図形の1点
 
+    float kakudo1 = Kakudo(VectorX(V, a), VectorY(V, a), VectorX(V, b), VectorY(V, b));
+    float kakudo2 = Kakudo(VectorX(V, b), VectorY(V, b), VectorX(V, c), VectorY(V, c));
+    float kakudo3 = Kakudo(VectorX(V, c), VectorY(V, c), VectorX(V, d), VectorY(V, d));
+    float kakudo4 = Kakudo(VectorX(V, d), VectorY(V, d), VectorX(V, a), VectorY(V, a));
+
     //2線分のなす角の総和
-    sum = Kakudo(Vector(V, a), Vector(V, b)) + Kakudo(Vector(V, b), Vector(V, c)) + Kakudo(Vector(V, c), Vector(V, d)) + Kakudo(Vector(V, d), Vector(V, a));
+    sum = kakudo1 + kakudo2 + kakudo3 + kakudo4;
 
     if (sum > 0.001 || sum < -0.001) {//内包している場合
         return true;
@@ -614,7 +662,7 @@ void CAdminControl::DrawStraight(float x, float y)
             preV = nowV;
         }
         b = new CVertex(preV->GetX() + 0.5, preV->GetY());
-        kakudo = Kakudo(Vector(preV, b), Vector(preV, a));
+        kakudo = Kakudo(VectorX(preV, b), VectorY(preV, b), VectorX(preV, a), VectorY(preV, a));
         if (kakudo >= -2.356 && kakudo < -0.785) { //-45°～-135°(y負方向)
             if (prepreV == NULL) {
                 CreateShape(preV->GetX(), y);
@@ -732,7 +780,7 @@ bool CAdminControl::NaihouJudge2(CShape* nowS, float x, float y)
         for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
             g1 = nowV;
             //2線分のなす角の総和
-            sum = sum + Kakudo(Vector(s1, g1), Vector(s2, g1->GetNext()));
+            sum = sum + Kakudo(VectorX(s1, g1), VectorY(s1, g1), VectorX(s2, g1->GetNext()), VectorY(s2, g1->GetNext()));
         }
 
         //内包していれば、trueを返す
@@ -806,12 +854,13 @@ void CAdminControl::DrawShape(CShape* nowS)
     */
 
     //点と線を全て色変え
-    if (ShapeMoveNowJudge == false) {
-        glColor3f(0, 1.0, 1.0); //シアン
-    }
-    else { //形状が移動中のとき
+    if(ShapeMoveNowJudge == true || WheelButtonFlag == true){ //形状が移動中または拡大・縮小中のとき
         glColor3f(1.0, 0, 0); //赤
     }
+    else {
+        glColor3f(0, 1.0, 1.0); //シアン
+    }
+
     glPointSize(10);
     glBegin(GL_POINTS); //点
     for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
@@ -819,11 +868,11 @@ void CAdminControl::DrawShape(CShape* nowS)
     }
     glEnd();
 
-    if (ShapeMoveNowJudge == false) {
-        glColor3f(0, 1.0, 1.0); //シアン
-    }
-    else { //形状が移動中のとき
+    if (ShapeMoveNowJudge == true || WheelButtonFlag == true) { //形状が移動中または拡大・縮小中のとき
         glColor3f(1.0, 0, 0); //赤
+    }
+    else {
+        glColor3f(0, 1.0, 1.0); //シアン
     }
     glLineWidth(1);
     glBegin(GL_LINE_STRIP); //線
@@ -888,10 +937,10 @@ bool CAdminControl::CrossJudge3(CShape* startS, CVertex* a, CVertex* b, CVertex*
             }
 
 
-            G1 = Gaiseki(Vector(s1, s2), Vector(s2, g2));
-            G2 = Gaiseki(Vector(s1, s2), Vector(s2, g1));
-            G3 = Gaiseki(Vector(g2, g1), Vector(g2, s2));
-            G4 = Gaiseki(Vector(g2, g1), Vector(g2, s1));
+            G1 = Gaiseki(VectorX(s1, s2), VectorY(s1, s2), VectorX(s2, g2), VectorY(s2, g2));
+            G2 = Gaiseki(VectorX(s1, s2), VectorY(s1, s2), VectorX(s2, g1), VectorY(s2, g1));
+            G3 = Gaiseki(VectorX(g2, g1), VectorY(g2, g1), VectorX(g2, s2), VectorY(g2, s2));
+            G4 = Gaiseki(VectorX(g2, g1), VectorY(g2, g1), VectorX(g2, s1), VectorY(g2, s1));
 
             if (G1 * G2 <= 0 && G3 * G4 <= 0) {
                 if (SameVertexJudge(s1, g1) == false && SameVertexJudge(s1, g2) == false) {
@@ -926,7 +975,10 @@ bool CAdminControl::NaihouJudge3(CShape* nowS, CVertex* a, CVertex* b, CVertex* 
     //vertex_headから打った点を見ていく
     for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
         if (SameVertexJudge(nowV, a) == false && SameVertexJudge(nowV, b) == false && SameVertexJudge(nowV, c) == false) {
-            sum = sum + Kakudo(Vector(nowV, a), Vector(nowV, b)) + Kakudo(Vector(nowV, b), Vector(nowV, c)) + Kakudo(Vector(nowV, c), Vector(nowV, a));
+            float kakudo1 = Kakudo(VectorX(nowV, a), VectorX(nowV, a), VectorX(nowV, b), VectorY(nowV, b));
+            float kakudo2 = Kakudo(VectorX(nowV, b), VectorX(nowV, b), VectorX(nowV, c), VectorY(nowV, c));
+            float kakudo3 = Kakudo(VectorX(nowV, c), VectorX(nowV, c), VectorX(nowV, a), VectorY(nowV, a));
+            sum = sum + kakudo1 + kakudo2 + kakudo3;
         }
     }
 
@@ -1046,8 +1098,8 @@ int CAdminControl::SelectLine(float x, float y)
             }
 
             //打った点と、各辺の両端の角度の総和を求める
-            d1 = Kakudo(Vector(vp1, vp2), Vector(vp1, vp));
-            d2 = Kakudo(Vector(vp2, vp1), Vector(vp2, vp));
+            d1 = Kakudo(VectorX(vp1, vp2), VectorY(vp1, vp2), VectorX(vp1, vp), VectorY(vp1, vp));
+            d2 = Kakudo(VectorX(vp2, vp1), VectorY(vp2, vp1), VectorX(vp2, vp), VectorY(vp2, vp));
             if (d1 < 0) {
                 d1 = d1 * (-1);
             }
@@ -1096,7 +1148,7 @@ float CAdminControl::VtoL_Distance(CVertex* vp1, CVertex* vp2, CVertex* vp)
     Y = vp->GetY() - vp1->GetY();
     B = sqrt(pow(X, 2) + pow(Y, 2));
 
-    gaiseki = Gaiseki(Vector(vp1,vp2), Vector(vp1, vp));
+    gaiseki = Gaiseki(VectorX(vp1, vp2), VectorY(vp1, vp2), VectorX(vp1, vp), VectorY(vp1, vp));
     if (gaiseki < 0) {
         gaiseki = gaiseki * (-1);
     }
@@ -1236,6 +1288,7 @@ bool CAdminControl::GaihouJudge2(CShape* nowS, CShape* HoldS)
     CVertex* Q = NULL;
     float sum = 0;
     int c = 0;
+    bool result = false;
 
     //外側ではない図形の点を見ていく
     for (CVertex* vp = nowS->GetV(); vp != NULL; vp = vp->GetNext()) {
@@ -1249,22 +1302,21 @@ bool CAdminControl::GaihouJudge2(CShape* nowS, CShape* HoldS)
             outV_N = outvp->GetNext();
 
             //2線分のなす角の総和
-            sum = sum + Kakudo(Vector(Q, outvp), Vector(Q, outvp->GetNext()));
+            sum = sum + Kakudo(VectorX(Q, outvp), VectorY(Q, outvp), VectorX(Q, outvp->GetNext()), VectorY(Q, outvp->GetNext()));
 
         }
-        sum = sum + Kakudo(Vector(Q, outV_N), Vector(Q, nowV));
+        sum = sum + Kakudo(VectorX(Q, outV_N), VectorY(Q, outV_N), VectorX(Q, nowV), VectorY(Q, nowV));
 
         if (sum > 0.001 || sum < -0.001) {//内包している場合
             c++;
         }
+        delete Q;
     }
     if (c == nowS->CountVertex()) {
-        delete Q;
-        return true;
+        result = true;
     }
 
-    delete Q;
-    return false;
+    return result;
 }
 
 //与えた辺が他の辺と交差するか判定する(交差していればtrueを返す)
@@ -1289,10 +1341,10 @@ bool CAdminControl::CrossJudge4(CVertex* s1, CVertex* g1)
                     s2 = nowV;
                     g2 = nowS->GetV();
                 }
-                G1 = Gaiseki(Vector(s1, g1), Vector(s1, s2));
-                G2 = Gaiseki(Vector(s1, g1), Vector(s1, g2));
-                G3 = Gaiseki(Vector(s2, g2), Vector(s2, s1));
-                G4 = Gaiseki(Vector(s2, g2), Vector(s2, g1));
+                G1 = Gaiseki(VectorX(s1, g1), VectorY(s1, g1), VectorX(s1, s2), VectorY(s1, s2));
+                G2 = Gaiseki(VectorX(s1, g1), VectorY(s1, g1), VectorX(s1, g2), VectorY(s1, g2));
+                G3 = Gaiseki(VectorX(s2, g2), VectorY(s2, g2), VectorX(s2, s1), VectorY(s2, s1));
+                G4 = Gaiseki(VectorX(s2, g2), VectorY(s2, g2), VectorX(s2, g1), VectorY(s2, g1));
 
                 if (G1 * G2 <= 0 && G3 * G4 <= 0) {
                     return true;
@@ -1305,10 +1357,10 @@ bool CAdminControl::CrossJudge4(CVertex* s1, CVertex* g1)
                 s2 = nowV;
                 g2 = nowV->GetNext();
 
-                G1 = Gaiseki(Vector(s1, g1), Vector(s1, s2));
-                G2 = Gaiseki(Vector(s1, g1), Vector(s1, g2));
-                G3 = Gaiseki(Vector(s2, g2), Vector(s2, s1));
-                G4 = Gaiseki(Vector(s2, g2), Vector(s2, g1));
+                G1 = Gaiseki(VectorX(s1, g1), VectorY(s1, g1), VectorX(s1, s2), VectorY(s1, s2));
+                G2 = Gaiseki(VectorX(s1, g1), VectorY(s1, g1), VectorX(s1, g2), VectorY(s1, g2));
+                G3 = Gaiseki(VectorX(s2, g2), VectorY(s2, g2), VectorX(s2, s1), VectorY(s2, s1));
+                G4 = Gaiseki(VectorX(s2, g2), VectorY(s2, g2), VectorX(s2, g1), VectorY(s2, g1));
 
                 if (SameVertexJudge(s2, g1) == false && SameVertexJudge(g2, s1) == false) { //比較線が同じ線かどうか
                     if (SameVertexJudge(s1, s2) == false) { //比較線が次の線かどうか
@@ -1368,8 +1420,8 @@ void CAdminControl::InsertVertex(float x, float y)
                 }
 
                 //打った点と、各辺の両端の角度の総和を求める
-                d1 = Kakudo(Vector(vp1, vp2), Vector(vp1, vp));
-                d2 = Kakudo(Vector(vp2, vp1), Vector(vp2, vp));
+                d1 = Kakudo(VectorX(vp1, vp2), VectorY(vp1, vp2), VectorX(vp1, vp), VectorY(vp1, vp));
+                d2 = Kakudo(VectorX(vp2, vp1), VectorY(vp2, vp1), VectorX(vp2, vp), VectorY(vp2, vp));
                 if (d1 < 0) {
                     d1 = d1 * (-1);
                 }
@@ -1454,14 +1506,14 @@ bool CAdminControl::GaihouJudge3(CShape* HoldS, CVertex* del)
 
                 if (outvp != del) {
                     if (outvpNext != del) {
-                        sum = sum + Kakudo(Vector(V, outvp), Vector(V, outvpNext));
+                        sum = sum + Kakudo(VectorX(V, outvp), VectorY(V, outvp), VectorX(V, outvpNext), VectorY(V, outvpNext));
                     }
                     else {
                         if (outvpNext->GetNext() != NULL) {
-                            sum = sum + Kakudo(Vector(V, outvp), Vector(V, outvpNext->GetNext()));
+                            sum = sum + Kakudo(VectorX(V, outvp), VectorY(V, outvp), VectorX(V, outvpNext->GetNext()), VectorY(V, outvpNext->GetNext()));
                         }
                         else { //削除する予定の点が終点(=始点)の場合
-                            sum = sum + Kakudo(Vector(V, outvp), Vector(V, HoldS->GetV()->GetNext()));
+                            sum = sum + Kakudo(VectorX(V, outvp), VectorY(V, outvp), VectorX(V, HoldS->GetV()->GetNext()), VectorY(V, HoldS->GetV()->GetNext()));
                         }
                     }
                 }
@@ -1485,13 +1537,15 @@ void CAdminControl::DeleteShape(float x, float y)
     for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
         //形状が選択されている場合のみ有効
         if (nowS->GetSelectShapeFlag() == true) {
-            if (nowS->GetNextS() != NULL) {
-                preS->SetNextS(nowS->GetNextS()); //削除する形状の前と後を繋げる
-                nowS->OnlyFreeShape();
-            }
-            else {
-                preS->SetNextS(NULL); //削除する形状の前をNULLに繋げる
-                nowS->OnlyFreeShape();
+            if (NaihouJudge2(nowS, x, y) == true) {
+                if (nowS->GetNextS() != NULL) {
+                    preS->SetNextS(nowS->GetNextS()); //削除する形状の前と後を繋げる
+                    nowS->OnlyFreeShape();
+                }
+                else {
+                    preS->SetNextS(NULL); //削除する形状の前をNULLに繋げる
+                    nowS->OnlyFreeShape();
+                }
             }
             break;
         }

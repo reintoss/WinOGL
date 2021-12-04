@@ -43,15 +43,20 @@ public:
 
 	//2点のベクトルを計算する
 	CVertex* Vector(CVertex* a, CVertex* b);
+	float VectorX(CVertex* a, CVertex* b);
+	float VectorY(CVertex* a, CVertex* b);
 
 	//2点の外積を計算する
 	float Gaiseki(CVertex* a, CVertex* b);
+	float Gaiseki(float ax, float ay, float bx, float by);
 
 	//2つの外積から内積を計算する
 	float Naiseki(CVertex* a, CVertex* b);
+	float Naiseki(float ax, float ay, float bx, float by);
 
 	//2線分の角度を求める
 	float Kakudo(CVertex* a, CVertex* b);
+	float Kakudo(float ax, float ay, float bx, float by);
 
 	//メモリ解放
 	void FreeMemory();

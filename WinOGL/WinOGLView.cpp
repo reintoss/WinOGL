@@ -301,7 +301,9 @@ void CWinOGLView::OnRButtonDown(UINT nFlags, CPoint point)
 	//編集ボタンが押されている場合のみ有効
 	if (AC.SelectButtonFlag == true) {
 		if (AC.DeleteVertex(clickX, clickY) != 1) {
-			AC.DeleteShape(clickX, clickY);
+			if (AC.GetWheelButtonFlag() == false && AC.GetShapeMoveNowJudge() == false) { //図形が赤色ではない場合
+				AC.DeleteShape(clickX, clickY);
+			}
 		}
 	}
 
