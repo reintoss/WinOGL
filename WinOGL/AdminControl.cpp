@@ -761,7 +761,9 @@ void CAdminControl::SelectShape(float x, float y)
                     WheelButtonFlag = false;
                 }
                 else {
-                    nowS->SetSelectShapeFlag(false);
+                    if (GetWheelButtonFlag() == false) { //図形が赤色ではない場合
+                        nowS->SetSelectShapeFlag(false);
+                    }
                 }
             }
     }
@@ -1655,6 +1657,7 @@ void CAdminControl::ShapeMoveCancel()
         nowV->SetXY(nowV2->GetX(), nowV2->GetY());
         nowV2 = nowV2->GetNext();
     }
+    Reset_shape_head2();
 }
 
 //shape_head2をリセットする関数
@@ -1694,20 +1697,22 @@ void CAdminControl::DrawBasePoint(float x, float y)
 {
     for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
         if (nowS->GetSelectShapeFlag() == true) {
-            glColor3f(0, 1.0, 0); //緑
+            if (WheelButtonFlag == true) { //中央ボタン(拡大縮小)
+                glColor3f(0, 1.0, 0); //緑
+            }
             glPointSize(10);
             glBegin(GL_POINTS);
-            glVertex2f(clickX_C, clickY_C);
+            glVertex2f(BaseX, BaseY);
             glEnd();
         }
     }
 }
 
-//clickX_C,clickY_Cをセットする関数
-void CAdminControl::SetclickXY_C(float x, float y)
+//BaseX,BaseYをセットする関数
+void CAdminControl::SetBaseXY(float x, float y)
 {
-    clickX_C = x;
-    clickY_C = y;
+    BaseX = x;
+    BaseY = y;
 }
 
 //形状を拡大・縮小する関数
@@ -1726,12 +1731,16 @@ void CAdminControl::DrawExpansionShape(short zDelta)
 
         for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
             if (nowS->GetSelectShapeFlag() == true) {
-                Reset_shape_head2();
-                AddShape2();
+                if (shape_head2 == NULL) {
+                    AddShape2();
+                    f = 1;
+                }
                 for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
-                    shape_head2->AddVertex(nowV->GetX(), nowV->GetY());
-                    a = k * (nowV->GetX() - clickX_C) + clickX_C;
-                    b = k * (nowV->GetY() - clickY_C) + clickY_C;
+                    if (f == 1) {
+                        shape_head2->AddVertex(nowV->GetX(), nowV->GetY());
+                    }
+                    a = k * (nowV->GetX() - BaseX) + BaseX;
+                    b = k * (nowV->GetY() - BaseY) + BaseY;
                     nowV->SetXY(a, b);
                 }
                 HoldS = nowS;
@@ -1748,8 +1757,8 @@ void CAdminControl::ShapeExepansionCancel()
     float a, b;
 
     for (CVertex* nowV = HoldS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
-        a = k * (nowV->GetX() - clickX_C) + clickX_C;
-        b = k * (nowV->GetY() - clickY_C) + clickY_C;
+        a = k * (nowV->GetX() - BaseX) + BaseX;
+        b = k * (nowV->GetY() - BaseY) + BaseY;
         nowV->SetXY(a, b);
     }
 }
@@ -1765,6 +1774,16 @@ bool CAdminControl::ExpansionJudge()
             }
         }
     }
-
     return false;
+}
+
+//shape_head2がNULLかどうか判定する関数(NULLならtrueを返す)
+bool CAdminControl::shape_head2_NULLJudge()
+{
+    if (shape_head2 == NULL) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }
