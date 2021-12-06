@@ -88,8 +88,8 @@ void CAdminControl::Draw() {
         DrawAxis();
     }
 
-    if (WheelButtonFlag == true) {
-        DrawBasePoint(0.5,0.5);
+    if (WheelButtonFlag == true || RButtonFlag == true) {
+        DrawBasePoint();
     }
 
 }
@@ -280,8 +280,6 @@ bool CAdminControl::GaihouJudge(CShape* startS, float x, float y)
 {
     CVertex* nowV = startS->GetV();
     CVertex* outV_N = NULL;
-    CVertex* a;
-    CVertex* b;
     CVertex* Q = NULL;
     float sum = 0;
     int c = 0;
@@ -736,9 +734,6 @@ int CAdminControl::SelectVertex(float x, float y)
 void CAdminControl::NotSelectFlagReset()
 {
 
-    CVertex* g1;
-    CVertex* g2;
-
     //各図形と各点を見ていく
     for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
         nowS->SetSelectShapeFlag(false);
@@ -758,10 +753,9 @@ void CAdminControl::SelectShape(float x, float y)
                 if (nowS->GetSelectShapeFlag() == false) {
                     NotSelectFlagReset();
                     nowS->SetSelectShapeFlag(true);
-                    WheelButtonFlag = false;
                 }
                 else {
-                    if (GetWheelButtonFlag() == false) { //図形が赤色ではない場合
+                    if (WheelButtonFlag == false || RButtonFlag == false) { //図形が赤色ではない場合
                         nowS->SetSelectShapeFlag(false);
                     }
                 }
@@ -856,8 +850,14 @@ void CAdminControl::DrawShape(CShape* nowS)
     */
 
     //点と線を全て色変え
-    if(ShapeMoveNowJudge == true || WheelButtonFlag == true){ //形状が移動中または拡大・縮小中のとき
+    if(ShapeMoveNowJudge == true){ //形状が移動中のとき
         glColor3f(1.0, 0, 0); //赤
+    }
+    else if (WheelButtonFlag == true) { //形状が拡大縮小中のとき
+        glColor3f(0, 1.0, 0); //緑
+    }
+    else if (RButtonFlag == true) { //形状が回転中のとき
+        glColor3f(1.0, 1.0, 0); //黄
     }
     else {
         glColor3f(0, 1.0, 1.0); //シアン
@@ -870,8 +870,14 @@ void CAdminControl::DrawShape(CShape* nowS)
     }
     glEnd();
 
-    if (ShapeMoveNowJudge == true || WheelButtonFlag == true) { //形状が移動中または拡大・縮小中のとき
+    if (ShapeMoveNowJudge == true) { //形状が移動中または拡大・縮小中のとき
         glColor3f(1.0, 0, 0); //赤
+    }
+    else if (WheelButtonFlag == true) { //形状が拡大縮小中のとき
+        glColor3f(0, 1.0, 0); //緑
+    }
+    else if (RButtonFlag == true) { //形状が回転中のとき
+        glColor3f(1.0, 1.0, 0); //黄
     }
     else {
         glColor3f(0, 1.0, 1.0); //シアン
@@ -1553,6 +1559,12 @@ void CAdminControl::DeleteShape(float x, float y)
         }
         preS = nowS;
     }
+
+    if (shape_head->GetNextS() == NULL) {
+        shape_head->FreeShape();
+        shape_head = NULL;
+        NoVertex = true;
+    }
 }
 
 //マウスがムーブした場所にShapeを描画する関数
@@ -1692,14 +1704,22 @@ bool CAdminControl::GetWheelButtonFlag()
     return WheelButtonFlag;
 }
 
-//図形を拡大する基点を描画する関数
-void CAdminControl::DrawBasePoint(float x, float y)
+//基点を描画する関数
+void CAdminControl::DrawBasePoint()
 {
     for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
         if (nowS->GetSelectShapeFlag() == true) {
             if (WheelButtonFlag == true) { //中央ボタン(拡大縮小)
                 glColor3f(0, 1.0, 0); //緑
+            }else{ //右クリック(回転)
+                glColor3f(1.0, 1.0, 0); //黄
             }
+            glPointSize(20);
+            glBegin(GL_POINTS);
+            glVertex2f(BaseX, BaseY);
+            glEnd();
+
+            glColor3f(0, 0, 0); //黒
             glPointSize(10);
             glBegin(GL_POINTS);
             glVertex2f(BaseX, BaseY);
@@ -1747,7 +1767,6 @@ void CAdminControl::DrawExpansionShape(short zDelta)
                 break;
             }
         }
-
 }
 
 //拡大・縮小によって形状が交差した場合、元に戻す関数
@@ -1785,5 +1804,74 @@ bool CAdminControl::shape_head2_NULLJudge()
     }
     else {
         return false;
+    }
+}
+//RButtonFlagをセットする関数
+void CAdminControl::SetRButtonFlag(bool f)
+{
+    RButtonFlag = f;
+}
+
+//RButtonFlagを取得する関数
+bool CAdminControl::GetRButtonFlag()
+{
+    return RButtonFlag;
+}
+
+//WheelUsedFlagをセット・取得する関数
+void CAdminControl::SetWheelUsedFlag(bool f)
+{
+    WheelUsedFlag = f;
+}
+
+//WheelUsedFlagをセット・取得する関数
+bool CAdminControl::GetWheelUsedFlag()
+{
+    return WheelUsedFlag;
+}
+
+//基点があるかどうかを取得する関数(あればtrue)
+bool CAdminControl::GetBasePointFlag()
+{
+    if (WheelButtonFlag == false && RButtonFlag == false) {
+        return false;
+    }
+    else {
+        return true;
+    }
+}
+
+//形状を回転する関数
+void CAdminControl::DrawRotateShape(short zDelta)
+{
+    float k; //回転数(ラジアン)
+    float a, b;
+    int f = 0;
+
+    //1ホイールで約0.1ラジアン(=約5.7°)回転
+    if (zDelta > 0) {
+        k = -0.1;
+    }
+    else {
+        k = 0.1;
+    }
+
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        if (nowS->GetSelectShapeFlag() == true) {
+            if (shape_head2 == NULL) {
+                AddShape2();
+                f = 1;
+            }
+            for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+                if (f == 1) {
+                    shape_head2->AddVertex(nowV->GetX(), nowV->GetY());
+                }
+                a = (nowV->GetX() - BaseX) * cos(k) - (nowV->GetY() - BaseY) * sin(k) + BaseX;
+                b = (nowV->GetX() - BaseX) * sin(k) + (nowV->GetY() - BaseY) * cos(k) + BaseY;
+                nowV->SetXY(a, b);
+            }
+            HoldS = nowS;
+            break;
+        }
     }
 }

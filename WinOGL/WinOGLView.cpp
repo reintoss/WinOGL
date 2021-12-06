@@ -143,7 +143,7 @@ CWinOGLDoc* CWinOGLView::GetDocument() const // デバッグ以外のバージ�
 void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 {
 
-	if (AC.GetWheelButtonFlag() == false) { //基点がある場合は無効
+	if (AC.GetBasePointFlag() == false) { //基点がある場合は無効
 		CRect rect;
 		GetClientRect(rect); // 描画領域の大きさを取得
 
@@ -170,7 +170,7 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 
 void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 {
-	if (AC.GetWheelButtonFlag() == false) { //基点がある場合は無効
+	if (AC.GetBasePointFlag() == false) { //基点がある場合は無効
 		CRect rect;
 		GetClientRect(rect); // 描画領域の大きさを取得
 
@@ -239,7 +239,7 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 void CWinOGLView::OnMouseMove(UINT nFlags, CPoint point)
 {
 
-	if (AC.GetWheelButtonFlag() == false) { //基点がある場合は無効
+	if (AC.GetBasePointFlag() == false) { //基点がある場合は無効
 		CRect rect;
 		GetClientRect(rect); // 描画領域の大きさを取得
 
@@ -273,7 +273,7 @@ void CWinOGLView::OnMouseMove(UINT nFlags, CPoint point)
 void CWinOGLView::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
 
-	if (AC.GetWheelButtonFlag() == false) { //基点がある場合は無効
+	if (AC.GetBasePointFlag() == false) { //基点がある場合は無効
 		CRect rect;
 		GetClientRect(rect); // 描画領域の大きさを取得
 
@@ -320,12 +320,29 @@ void CWinOGLView::OnMButtonDown(UINT nFlags, CPoint point)
 	}
 
 	if (AC.SelectButtonFlag == true) {
-		if (AC.GetWheelButtonFlag() == false) {
-			AC.SetBaseXY(BaseX, BaseY);
-			AC.SetWheelButtonFlag(true);
+		if (AC.GetWheelButtonFlag() == false) {  //基点がない場合
+			if (AC.GetRButtonFlag() == false) { //回転基点がなければ、拡大縮小基点を追加
+				AC.SetBaseXY(BaseX, BaseY);
+				AC.SetWheelButtonFlag(true);
+				AC.SetRButtonFlag(false);
+				AC.SetWheelUsedFlag(false);
+			}
+			else { //回転基点がある場合は、回転基点解除→交差判定
+				AC.SetRButtonFlag(false);
+				if (AC.shape_head2_NULLJudge() == false) { //shape_head2がNULLでなければ交差判定
+					if (AC.ShapeMoveCrossJudge() == true) {
+						AC.ShapeMoveCancel();
+					}else if (AC.ExpansionJudge() == true) {
+						AC.ShapeMoveCancel();
+					}
+				}
+				AC.ResetHoldS();
+				AC.Reset_shape_head2();
+			}
 		}
-		else { //拡大縮小した後に再度中央ボタンを押す
-			if (AC.shape_head2_NULLJudge() == false) { //shape_head2がNULLではなければ交差判定
+		else { //拡大縮小基点がある場合は、拡大縮小基点解除→交差判定
+			AC.SetWheelButtonFlag(false);
+			if (AC.shape_head2_NULLJudge() == false) { //shape_head2がNULLでなければ交差判定
 				if (AC.ShapeMoveCrossJudge() == true) {
 					AC.ShapeMoveCancel();
 				}
@@ -333,7 +350,6 @@ void CWinOGLView::OnMButtonDown(UINT nFlags, CPoint point)
 					AC.ShapeMoveCancel();
 				}
 			}
-			AC.SetWheelButtonFlag(false);
 			AC.ResetHoldS();
 			AC.Reset_shape_head2();
 		}
@@ -365,9 +381,20 @@ void CWinOGLView::OnRButtonDown(UINT nFlags, CPoint point)
 
 	//編集ボタンが押されている場合のみ有効
 	if (AC.SelectButtonFlag == true) {
+		if (AC.GetRButtonFlag() == false) {
+			if (AC.GetWheelButtonFlag() == true && AC.GetWheelUsedFlag() == false) { //中央ボタンで基点が追加されているかつ、まだマウスホイールを動かしていない場合
+				AC.SetWheelButtonFlag(false);
+				AC.SetBaseXY(BaseX, BaseY);
+				AC.SetRButtonFlag(true);
+			}
+		}
+
 		if (AC.DeleteVertex(clickX_R, clickY_R) != 1) {
-			if (AC.GetWheelButtonFlag() == false && AC.GetShapeMoveNowJudge() == false) { //図形が赤色ではない場合
+			if (AC.GetWheelButtonFlag() == false && AC.GetShapeMoveNowJudge() == false && AC.GetRButtonFlag() == false) { //図形が赤色ではない場合
 				AC.DeleteShape(clickX_R, clickY_R);
+				if (AC.GetNoVertex() == true) {
+					AC.SelectButtonFlag = false;
+				}
 			}
 		}
 	}
@@ -384,6 +411,11 @@ BOOL CWinOGLView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	//中央ボタンで基点が追加されていたら	
 	if (AC.GetWheelButtonFlag() == true) {
 		AC.DrawExpansionShape(zDelta); //拡大縮小する
+		AC.SetWheelUsedFlag(true);
+	}
+	//右ボタンで基点が追加されていたら
+	else{
+		AC.DrawRotateShape(zDelta); //回転する
 	}
 
 	RedrawWindow();
@@ -505,7 +537,7 @@ void CWinOGLView::OnEditSelect()
 	if (AC.GetShapeCloseFlag() == true) { //形状が閉じていない場合は選択できない
 		if (AC.GetNoVertex() == false) {
 			if (AC.SelectButtonFlag == true) {
-				if (AC.GetWheelButtonFlag() == false) { //基点がある場合は解除できない
+				if (AC.GetBasePointFlag() == false) { //基点がある場合は解除できない
 					AC.SelectButtonFlag = false;
 					AC.NotSelectFlagReset();
 				}
@@ -536,7 +568,7 @@ void CWinOGLView::OnSquare()
 {
 	if (AC.GetShapeCloseFlag() == true || AC.GetNoVertex() == true) {
 		if (AC.SquareButtonFlag == false) {
-			if (AC.GetWheelButtonFlag() == false) { //基点がある場合は解除できない
+			if (AC.GetBasePointFlag() == false) { //基点がある場合は解除できない
 				if (AC.SelectButtonFlag == true) {
 					AC.SelectButtonFlag = false;
 					AC.NotSelectFlagReset();
@@ -570,7 +602,7 @@ void CWinOGLView::OnStraight()
 {
 
 	if (AC.StraightButtonFlag == false) {
-		if (AC.GetWheelButtonFlag() == false) { //基点がある場合は解除できない
+		if (AC.GetBasePointFlag() == false) { //基点がある場合は解除できない
 			if (AC.SelectButtonFlag == true) {
 				AC.SelectButtonFlag = false;
 				AC.NotSelectFlagReset();
@@ -602,12 +634,13 @@ void CWinOGLView::OnUpdateStraight(CCmdUI* pCmdUI)
 
 void CWinOGLView::OnAllDelete()
 {
-	if (AC.GetWheelButtonFlag()==false) {
+	if (AC.GetBasePointFlag() == false) { //基点がある場合は無効
 		AC.AllDelete();
 		AC.SetShapeCloseFlag(false);
 		if (AC.SelectButtonFlag == true) {
 			AC.SelectButtonFlag = false;
 		}
 	}
+
 	RedrawWindow();
 }

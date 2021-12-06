@@ -212,8 +212,8 @@ public:
 	//WheelButtonFlagをセット・取得する関数
 	void SetWheelButtonFlag(bool f);
 	bool GetWheelButtonFlag();
-	//図形を拡大する基点を描画する関数
-	void DrawBasePoint(float x, float y);
+	//基点を描画する関数
+	void DrawBasePoint();
 	//マウス中央ボタンが押下されたときのx,y座標
 	float BaseX = 0;
 	float BaseY = 0;
@@ -228,6 +228,20 @@ public:
 
 	//shape_head2がNULLかどうか判定する関数
 	bool shape_head2_NULLJudge();
+	//右クリックによって基点が追加されたかどうか
+	bool RButtonFlag = false;
+	//RButtonFlagをセット・取得する関数
+	void SetRButtonFlag(bool f);
+	bool GetRButtonFlag();
+	//マウスホイールを使用したかどうか(基点追加時に初期化)
+	bool WheelUsedFlag = false;
+	//WheelUsedFlagをセット・取得する関数
+	void SetWheelUsedFlag(bool f);
+	bool GetWheelUsedFlag();
+	//基点があるかどうかを取得する関数(あればtrue)
+	bool GetBasePointFlag();
+	//形状を回転する関数
+	void DrawRotateShape(short zDelta);
 };
 
 
