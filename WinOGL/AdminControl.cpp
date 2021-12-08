@@ -706,6 +706,64 @@ void CAdminControl::DrawStraight(float x, float y)
 
 }
 
+//選択中の点または辺をリセットする関数
+void CAdminControl::ResetSelectVL()
+{
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+            if (nowV->GetSelectVertexFlag() == true) {
+                nowV->SetSelectVertexFlag(false);
+            }
+            if (nowV->GetSelectLineFlag() == true) {
+                nowV->SetSelectLineFlag(false);
+            }
+        }
+    }
+}
+
+
+//クリックした場所に形状をコピーする関数
+void CAdminControl::DrawCopyShape(float x, float y)
+{
+
+    float CenterX = 0;
+    float CenterY = 0;
+    float DiffX = 0;
+    float DiffY = 0;
+    int c = 0;
+
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        //形状が選択されている場合のみ有効
+        if (nowS->GetSelectShapeFlag() == true) {
+            for (CVertex* nowV = nowS->GetV()->GetNext(); nowV != NULL; nowV = nowV->GetNext()) {
+                CenterX = CenterX + nowV->GetX();
+                CenterY = CenterY + nowV->GetY();
+                c++;
+            }
+            CenterX = CenterX / c; //コピー元形状の重心x座標
+            CenterY = CenterY / c; //コピー元形状の重心y座標
+            for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+                DiffX = nowV->GetX() - CenterX;
+                DiffY = nowV->GetY() - CenterY;
+                shape_head->AddVertex(x + DiffX, y + DiffY);
+            }
+            HoldS = shape_head;
+            AddShape();
+            break;
+        }
+    }
+}
+
+//交差していた場合、コピーした形状を削除する関数
+void CAdminControl::DeleteCopyShape()
+{
+    CShape* preS = shape_head;
+
+    preS->SetNextS(HoldS->GetNextS()); //削除する形状の前と後を繋げる
+    HoldS->OnlyFreeShape();
+
+}
+
 //選択した点の色を変える（実際に色を変えるのはDraw()内）
 int CAdminControl::SelectVertex(float x, float y)
 {
@@ -1189,6 +1247,9 @@ void CAdminControl::DrawMoveVertex(float x, float y, float mx, float my)
                 if (Distance(nowV, x, y) <= 0.05) {
                     if (nowV->GetSelectVertexFlag() == true) {
                         HoldV = nowV;
+                        if (nowV->GetNext() == NULL) {
+                            EndVertexFlag = true;
+                        }
                         HoldS = nowS;
                         originX = nowV->GetX();
                         originY = nowV->GetY();
@@ -1204,7 +1265,7 @@ void CAdminControl::DrawMoveVertex(float x, float y, float mx, float my)
     if (AlreadySelectVertexFlag == true) {
         VertexMoveNowJudge = true;
         //始点もしくは終点を選んだ場合
-        if (SameVertexJudge(HoldS->GetV(), HoldV) == true) {
+        if (EndVertexFlag == true) {
             HoldS->GetV()->SetXY(mx, my);
             HoldV->SetXY(mx, my);
         }//始点終点以外を選んだ場合
@@ -1446,6 +1507,19 @@ void CAdminControl::InsertVertex(float x, float y)
             }
         }
     }
+}
+
+//選択されている線があるか判定する関数
+bool CAdminControl::SelectLineNowJudge()
+{
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+            if (nowV->GetSelectLineFlag() == true) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 //左クリックで点を削除する関数
@@ -1785,14 +1859,25 @@ void CAdminControl::ShapeExepansionCancel()
 //縮小しすぎを防ぐ(問題なしならfalse)
 bool CAdminControl::ExpansionJudge()
 {
+    int countV = 0;
+    int count = 0;
 
     for (CVertex* nowV = HoldS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+        countV++;
         if (nowV != HoldS->GetV()) {
             if (Distance(nowV, HoldS->GetV()->GetX(), HoldS->GetV()->GetY()) <= 0.05) {
                 return true;
             }
         }
+        if (nowV->GetY() >= 1 || nowV->GetY() <= -1) {
+            count++;
+        }
     }
+    
+    if (countV == count) { //点すべてがウィンドウ外の時
+        return true;
+    }
+
     return false;
 }
 

@@ -52,6 +52,8 @@ ON_WM_MBUTTONDOWN()
 ON_WM_MOUSEWHEEL()
 //ON_WM_MBUTTONDBLCLK()
 //ON_WM_RBUTTONDBLCLK()
+ON_COMMAND(ID_COPY, &CWinOGLView::OnCopy)
+ON_UPDATE_COMMAND_UI(ID_COPY, &CWinOGLView::OnUpdateCopy)
 END_MESSAGE_MAP()
 
 // CWinOGLView コンストラクション/デストラクション
@@ -200,7 +202,11 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 		}
 		else {
 			//マウスが動いていない場合、選択モード
-			if (AC.GetVertexMoveNowJudge() == false && AC.GetShapeMoveNowJudge() == false) {
+			if (AC.CopyButtonFlag == true) {
+				AC.SelectShape(clickX, clickY);
+				
+			}
+			else if (AC.GetVertexMoveNowJudge() == false && AC.GetShapeMoveNowJudge() == false) {
 				if (AC.SelectVertex(clickX, clickY) != 1) {
 					if (AC.SelectLine(clickX, clickY) != 1) {
 						AC.SelectShape(clickX, clickY);
@@ -223,6 +229,7 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 		LButtonDownFlag = false;
 		AC.ResetVertexMoveNowJudge();
 		AC.ResetShapeMoveNowJudge();
+		AC.EndVertexFlag = false;
 		AC.ResetHoldV();
 		AC.ResetHoldS();
 		AC.ResetAlreadySelectVertexFlag();
@@ -239,7 +246,7 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 void CWinOGLView::OnMouseMove(UINT nFlags, CPoint point)
 {
 
-	if (AC.GetBasePointFlag() == false) { //基点がある場合は無効
+	if (AC.GetBasePointFlag() == false && AC.CopyButtonFlag == false) { //基点がある場合またはコピーモードの場合は無効
 		CRect rect;
 		GetClientRect(rect); // 描画領域の大きさを取得
 
@@ -291,11 +298,22 @@ void CWinOGLView::OnLButtonDblClk(UINT nFlags, CPoint point)
 
 		//編集ボタンが押されている場合のみ有効
 		if (AC.SelectButtonFlag == true) {
-			AC.InsertVertex(clickX, clickY);
+			if (AC.CopyButtonFlag == true) {
+				AC.DrawCopyShape(clickX, clickY);//コピーした形状を描画
+				if (AC.ShapeMoveCrossJudge() == true) { //交差していた場合
+					AC.DeleteCopyShape(); //コピーした形状を削除
+				}
+
+			}
+			else if (AC.SelectLineNowJudge() == false) { //選択中の線がある場合(ダブルクリックなのでfalse)
+				AC.InsertVertex(clickX, clickY);
+			}
 		}
 
 	}
 	RedrawWindow();
+
+	AC.ResetHoldS();
 
 	CView::OnLButtonDblClk(nFlags, point);
 }
@@ -331,8 +349,6 @@ void CWinOGLView::OnMButtonDown(UINT nFlags, CPoint point)
 				AC.SetRButtonFlag(false);
 				if (AC.shape_head2_NULLJudge() == false) { //shape_head2がNULLでなければ交差判定
 					if (AC.ShapeMoveCrossJudge() == true) {
-						AC.ShapeMoveCancel();
-					}else if (AC.ExpansionJudge() == true) {
 						AC.ShapeMoveCancel();
 					}
 				}
@@ -394,6 +410,7 @@ void CWinOGLView::OnRButtonDown(UINT nFlags, CPoint point)
 				AC.DeleteShape(clickX_R, clickY_R);
 				if (AC.GetNoVertex() == true) {
 					AC.SelectButtonFlag = false;
+					AC.CopyButtonFlag = false;
 				}
 			}
 		}
@@ -414,7 +431,7 @@ BOOL CWinOGLView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 		AC.SetWheelUsedFlag(true);
 	}
 	//右ボタンで基点が追加されていたら
-	else{
+	else if(AC.GetRButtonFlag() == true){
 		AC.DrawRotateShape(zDelta); //回転する
 	}
 
@@ -539,6 +556,7 @@ void CWinOGLView::OnEditSelect()
 			if (AC.SelectButtonFlag == true) {
 				if (AC.GetBasePointFlag() == false) { //基点がある場合は解除できない
 					AC.SelectButtonFlag = false;
+					AC.CopyButtonFlag = false;
 					AC.NotSelectFlagReset();
 				}
 			}
@@ -571,6 +589,7 @@ void CWinOGLView::OnSquare()
 			if (AC.GetBasePointFlag() == false) { //基点がある場合は解除できない
 				if (AC.SelectButtonFlag == true) {
 					AC.SelectButtonFlag = false;
+					AC.CopyButtonFlag = false;
 					AC.NotSelectFlagReset();
 				}
 				if (AC.StraightButtonFlag == true) {
@@ -605,6 +624,7 @@ void CWinOGLView::OnStraight()
 		if (AC.GetBasePointFlag() == false) { //基点がある場合は解除できない
 			if (AC.SelectButtonFlag == true) {
 				AC.SelectButtonFlag = false;
+				AC.CopyButtonFlag = false;
 				AC.NotSelectFlagReset();
 			}
 			if (AC.SquareButtonFlag == true) {
@@ -639,8 +659,38 @@ void CWinOGLView::OnAllDelete()
 		AC.SetShapeCloseFlag(false);
 		if (AC.SelectButtonFlag == true) {
 			AC.SelectButtonFlag = false;
+			AC.CopyButtonFlag = false;
 		}
 	}
 
 	RedrawWindow();
+}
+
+
+void CWinOGLView::OnCopy()
+{
+	if (AC.SelectButtonFlag == true) {  //EDITモードがオンの時のみ使用可
+		if (AC.CopyButtonFlag == false) {
+			if (AC.GetBasePointFlag() == false) { //基点がある場合は解除できない
+				AC.CopyButtonFlag = true;
+				AC.ResetSelectVL();
+			}
+		}
+		else {
+			AC.CopyButtonFlag = false;
+		}
+	}
+
+	RedrawWindow();
+}
+
+
+void CWinOGLView::OnUpdateCopy(CCmdUI* pCmdUI)
+{
+	if (AC.CopyButtonFlag == true) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
 }

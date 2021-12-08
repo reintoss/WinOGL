@@ -102,6 +102,14 @@ public:
 	//直前の直線の向き(1：x正、2：x負、3：y正、4：y負)
 	int StraightPreMove = 0;
 
+	//選択中の点または辺をリセットする関数
+	void ResetSelectVL();
+	//形状コピーボタンが押されているかどうかのフラグ
+	bool CopyButtonFlag = false;
+	//クリックした場所に形状をコピーする関数
+	void DrawCopyShape(float x, float y);
+	//交差していた場合、コピーした形状を削除する関数
+	void DeleteCopyShape();
 
 public:
 
@@ -154,6 +162,8 @@ public:
 	bool GetVertexMoveNowJudge();
 	//MoveNowJudgeをfalseにする関数
 	void ResetVertexMoveNowJudge();
+	//終点をホールドした場合はtrue
+	bool EndVertexFlag = false;
 	//ホールドしている点
 	CVertex* HoldV = NULL;
 	//ホールドしている点をリセットする関数
@@ -180,6 +190,8 @@ public:
 
 	//線にダブルクリックで点を挿入する関数
 	void InsertVertex(float x, float y);
+	//選択されている線があるか判定する関数
+	bool SelectLineNowJudge();
 
 	//左クリックで点を削除する関数
 	int DeleteVertex(float x, float y);
