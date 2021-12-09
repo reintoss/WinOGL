@@ -554,7 +554,7 @@ void CAdminControl::DrawSquare(float x1, float y1, float x2, float y2)
     CVertex* d = NULL;
     float diff_x = x1 - x2;
     float diff_y = y1 - y2;
-    bool f = false;
+    bool f = true;
     int count = 0;
 
     if (diff_x>= 0.05 || diff_x <= -0.05) {
@@ -571,17 +571,31 @@ void CAdminControl::DrawSquare(float x1, float y1, float x2, float y2)
                 c = new CVertex(x2, y2);
                 d = new CVertex(x1, y2);
 
-                //外包判定
+                //内包判定
                 for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
-                    if (GaihouJudge5(nowS, a, b, c, d) == true) {
-                        count++;
+                    if (NaihouJudge2(nowS, x1, y1) == true) {
+                        f = false;
                     }
                 }
 
-                //交差判定
-                if (count == 0) {
-                    if (CrossJudge4(a, b) == false && CrossJudge4(b, c) == false && CrossJudge4(c, d) == false && CrossJudge4(d, a) == false) {
-                        f = true;
+                //外包判定
+                if (f == true) {
+                    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+                        if (GaihouJudge5(nowS, a, b, c, d) == true) {
+                            count++;
+                            f = false;
+                            break;
+                        }
+                    }
+
+                    //交差判定
+                    if (f == true) {
+                        if (CrossJudge4(a, b) == false && CrossJudge4(b, c) == false && CrossJudge4(c, d) == false && CrossJudge4(d, a) == false) {
+                            f = true;
+                        }
+                        else {
+                            f = false;
+                        }
                     }
                 }
             }
@@ -723,7 +737,7 @@ void CAdminControl::ResetSelectVL()
 
 
 //クリックした場所に形状をコピーする関数
-void CAdminControl::DrawCopyShape(float x, float y)
+int CAdminControl::DrawCopyShape(float x, float y)
 {
 
     float CenterX = 0;
@@ -749,9 +763,11 @@ void CAdminControl::DrawCopyShape(float x, float y)
             }
             HoldS = shape_head;
             AddShape();
+            return 1;
             break;
         }
     }
+    return 0;
 }
 
 //交差していた場合、コピーした形状を削除する関数
@@ -762,6 +778,25 @@ void CAdminControl::DeleteCopyShape()
     preS->SetNextS(HoldS->GetNextS()); //削除する形状の前と後を繋げる
     HoldS->OnlyFreeShape();
 
+}
+
+//描画中の点を元に戻す
+void CAdminControl::BackVertex()
+{
+    CShape* nowS = shape_head;
+    CVertex* preV = nowS->GetV();
+    CShape* preS = shape_head;
+
+    for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+        if (nowV->GetNext() == NULL) {
+            if (nowV != nowS->GetV()) { //始点ではない場合
+                preV->SetNext(NULL);
+                delete nowV;
+                break;
+            }
+        }
+        preV = nowV;
+    }
 }
 
 //選択した点の色を変える（実際に色を変えるのはDraw()内）
@@ -1478,8 +1513,8 @@ void CAdminControl::InsertVertex(float x, float y)
     for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
 
         for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
-            //線が選択されていたら点を挿入(ダブルクリックなのでfalseのとき)
-            if (nowV->GetSelectLineFlag() == false) {
+            //線が選択されていたら点を挿入
+            if (nowV->GetSelectLineFlag() == true) {
                 vp1 = nowV;
                 if (nowV->GetNext() != NULL) {
                     vp2 = nowV->GetNext();
@@ -1502,6 +1537,8 @@ void CAdminControl::InsertVertex(float x, float y)
                     if (VtoL_Distance(vp1, vp2, vp) <= 0.03) {
                         vp->SetNext(nowV->GetNext());
                         nowV->SetNext(vp);
+                        NotSelectFlagReset();
+                        vp->SetSelectVertexFlag(true);
                     }
                 }
             }
@@ -1712,6 +1749,7 @@ void CAdminControl::ResetShapeMoveNowJudge()
 //移動させたShapeによって交差する箇所があるか
 bool CAdminControl::ShapeMoveCrossJudge()
 {
+
     for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
             if (HoldS != nowS) {
                 //点が移動させたことによって、Shapeの中に他のShapeがないか判定
@@ -1802,6 +1840,45 @@ void CAdminControl::DrawBasePoint()
     }
 }
 
+//基点を形状の重心にする関数
+void CAdminControl::CenterBase()
+{
+    float CenterX = 0;
+    float CenterY = 0;
+    int c = 0;
+
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        if (nowS->GetSelectShapeFlag() == true) {
+            if (WheelButtonFlag == true) { //中央ボタン(拡大縮小)
+                glColor3f(0, 1.0, 0); //緑
+            }
+            else { //右クリック(回転)
+                glColor3f(1.0, 1.0, 0); //黄
+            }
+
+            //重心を求める
+            for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+                CenterX = CenterX + nowV->GetX();
+                CenterY = CenterY + nowV->GetY();
+                c++;
+            }
+            BaseX = CenterX / c;
+            BaseY = CenterY / c;
+
+            glPointSize(20);
+            glBegin(GL_POINTS);
+            glVertex2f(BaseX, BaseY);
+            glEnd();
+
+            glColor3f(0, 0, 0); //黒
+            glPointSize(10);
+            glBegin(GL_POINTS);
+            glVertex2f(BaseX, BaseY);
+            glEnd();
+        }
+    }
+}
+
 //BaseX,BaseYをセットする関数
 void CAdminControl::SetBaseXY(float x, float y)
 {
@@ -1856,12 +1933,25 @@ void CAdminControl::ShapeExepansionCancel()
     }
 }
 
-//縮小しすぎを防ぐ(問題なしならfalse)
-bool CAdminControl::ExpansionJudge()
+//拡大・縮小しすぎを防ぐ(問題なしならfalse)
+bool CAdminControl::ExpansionJudge(CRect rect)
 {
     int countV = 0;
     int count = 0;
+    float MaxX = 0;
+    float MaxY = 0;
 
+    //ウィンドウサイズの取得
+    if (rect.Width() > rect.Height()) { //ウィンドウが横長のとき
+        MaxY = 1.0;
+        MaxX = ((float)rect.Width() / rect.Height());
+    }
+    else { //ウィンドウが縦長のとき
+        MaxX = 1.0;
+        MaxY = ((float)rect.Height() / rect.Width());
+    }
+
+    //拡大・縮小しすぎかどうか
     for (CVertex* nowV = HoldS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
         countV++;
         if (nowV != HoldS->GetV()) {
@@ -1869,11 +1959,10 @@ bool CAdminControl::ExpansionJudge()
                 return true;
             }
         }
-        if (nowV->GetY() >= 1 || nowV->GetY() <= -1) {
+        if (nowV->GetX() >= MaxX || nowV->GetX() <= MaxX * (-1) || nowV->GetY() >= MaxY || nowV->GetY() <= MaxY * (-1)) {
             count++;
         }
     }
-    
     if (countV == count) { //点すべてがウィンドウ外の時
         return true;
     }

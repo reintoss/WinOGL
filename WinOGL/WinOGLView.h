@@ -96,6 +96,10 @@ public:
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 	afx_msg void OnCopy();
 	afx_msg void OnUpdateCopy(CCmdUI* pCmdUI);
+	afx_msg void OnDrawmode();
+	afx_msg void OnUpdateDrawmode(CCmdUI* pCmdUI);
+	afx_msg void OnCenterbase();
+	afx_msg void OnBackVertex();
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン

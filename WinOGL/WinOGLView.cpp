@@ -54,6 +54,10 @@ ON_WM_MOUSEWHEEL()
 //ON_WM_RBUTTONDBLCLK()
 ON_COMMAND(ID_COPY, &CWinOGLView::OnCopy)
 ON_UPDATE_COMMAND_UI(ID_COPY, &CWinOGLView::OnUpdateCopy)
+ON_COMMAND(ID_DRAWMODE, &CWinOGLView::OnDrawmode)
+ON_UPDATE_COMMAND_UI(ID_DRAWMODE, &CWinOGLView::OnUpdateDrawmode)
+ON_COMMAND(ID_CENTERBASE, &CWinOGLView::OnCenterbase)
+ON_COMMAND(ID_BACK_VERTEX, &CWinOGLView::OnBackVertex)
 END_MESSAGE_MAP()
 
 // CWinOGLView コンストラクション/デストラクション
@@ -299,14 +303,11 @@ void CWinOGLView::OnLButtonDblClk(UINT nFlags, CPoint point)
 		//編集ボタンが押されている場合のみ有効
 		if (AC.SelectButtonFlag == true) {
 			if (AC.CopyButtonFlag == true) {
-				AC.DrawCopyShape(clickX, clickY);//コピーした形状を描画
-				if (AC.ShapeMoveCrossJudge() == true) { //交差していた場合
-					AC.DeleteCopyShape(); //コピーした形状を削除
+				if (AC.DrawCopyShape(clickX, clickY) == 1) { //コピーした形状を描画
+					if (AC.ShapeMoveCrossJudge() == true) { //交差していた場合
+						AC.DeleteCopyShape(); //コピーした形状を削除
+					}
 				}
-
-			}
-			else if (AC.SelectLineNowJudge() == false) { //選択中の線がある場合(ダブルクリックなのでfalse)
-				AC.InsertVertex(clickX, clickY);
 			}
 		}
 
@@ -362,7 +363,7 @@ void CWinOGLView::OnMButtonDown(UINT nFlags, CPoint point)
 				if (AC.ShapeMoveCrossJudge() == true) {
 					AC.ShapeMoveCancel();
 				}
-				else if (AC.ExpansionJudge() == true) {
+				else if (AC.ExpansionJudge(rect) == true) {
 					AC.ShapeMoveCancel();
 				}
 			}
@@ -397,7 +398,7 @@ void CWinOGLView::OnRButtonDown(UINT nFlags, CPoint point)
 
 	//編集ボタンが押されている場合のみ有効
 	if (AC.SelectButtonFlag == true) {
-		if (AC.GetRButtonFlag() == false) {
+		if (AC.GetRButtonFlag() == false) { //回転基点の追加
 			if (AC.GetWheelButtonFlag() == true && AC.GetWheelUsedFlag() == false) { //中央ボタンで基点が追加されているかつ、まだマウスホイールを動かしていない場合
 				AC.SetWheelButtonFlag(false);
 				AC.SetBaseXY(BaseX, BaseY);
@@ -405,12 +406,16 @@ void CWinOGLView::OnRButtonDown(UINT nFlags, CPoint point)
 			}
 		}
 
-		if (AC.DeleteVertex(clickX_R, clickY_R) != 1) {
-			if (AC.GetWheelButtonFlag() == false && AC.GetShapeMoveNowJudge() == false && AC.GetRButtonFlag() == false) { //図形が赤色ではない場合
+		if (AC.DeleteVertex(clickX_R, clickY_R) != 1) { //点の削除
+			if (AC.SelectLineNowJudge() == true) { //選択している線がある場合
+				AC.InsertVertex(clickX, clickY); //点の挿入
+			}
+			else if (AC.GetWheelButtonFlag() == false && AC.GetShapeMoveNowJudge() == false && AC.GetRButtonFlag() == false) { //図形が赤色ではない場合
 				AC.DeleteShape(clickX_R, clickY_R);
 				if (AC.GetNoVertex() == true) {
 					AC.SelectButtonFlag = false;
 					AC.CopyButtonFlag = false;
+					AC.DrawButtonFlag = true;
 				}
 			}
 		}
@@ -556,12 +561,14 @@ void CWinOGLView::OnEditSelect()
 			if (AC.SelectButtonFlag == true) {
 				if (AC.GetBasePointFlag() == false) { //基点がある場合は解除できない
 					AC.SelectButtonFlag = false;
+					AC.DrawButtonFlag = true;
 					AC.CopyButtonFlag = false;
 					AC.NotSelectFlagReset();
 				}
 			}
 			else {
 				AC.SelectButtonFlag = true;
+				AC.DrawButtonFlag = false;
 				AC.SquareButtonFlag = false;
 				AC.StraightButtonFlag = false;
 			}
@@ -589,6 +596,7 @@ void CWinOGLView::OnSquare()
 			if (AC.GetBasePointFlag() == false) { //基点がある場合は解除できない
 				if (AC.SelectButtonFlag == true) {
 					AC.SelectButtonFlag = false;
+					AC.DrawButtonFlag = true;
 					AC.CopyButtonFlag = false;
 					AC.NotSelectFlagReset();
 				}
@@ -624,6 +632,7 @@ void CWinOGLView::OnStraight()
 		if (AC.GetBasePointFlag() == false) { //基点がある場合は解除できない
 			if (AC.SelectButtonFlag == true) {
 				AC.SelectButtonFlag = false;
+				AC.DrawButtonFlag = true;
 				AC.CopyButtonFlag = false;
 				AC.NotSelectFlagReset();
 			}
@@ -659,6 +668,7 @@ void CWinOGLView::OnAllDelete()
 		AC.SetShapeCloseFlag(false);
 		if (AC.SelectButtonFlag == true) {
 			AC.SelectButtonFlag = false;
+			AC.DrawButtonFlag = true;
 			AC.CopyButtonFlag = false;
 		}
 	}
@@ -693,4 +703,52 @@ void CWinOGLView::OnUpdateCopy(CCmdUI* pCmdUI)
 	else {
 		pCmdUI->SetCheck(false);
 	}
+}
+
+
+void CWinOGLView::OnDrawmode()
+{
+
+	if (AC.GetBasePointFlag() == false) { //基点がある場合は解除できない
+		if (AC.SelectButtonFlag == true) {
+			AC.SelectButtonFlag = false;
+			AC.CopyButtonFlag = false;
+			AC.NotSelectFlagReset();
+			AC.DrawButtonFlag = true;
+		}
+	}
+
+	RedrawWindow();
+}
+
+
+void CWinOGLView::OnUpdateDrawmode(CCmdUI* pCmdUI)
+{
+	if (AC.DrawButtonFlag == true) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
+}
+
+
+void CWinOGLView::OnCenterbase()
+{
+	if (AC.GetBasePointFlag() == true) { //基点がある場合のみ
+		AC.CenterBase();
+	}
+
+	RedrawWindow();
+}
+
+void CWinOGLView::OnBackVertex()
+{
+	if (AC.DrawButtonFlag == true) { //描画モードのときのみ有効
+		if (AC.GetShapeCloseFlag() == false) { //閉じていない形状がある場合
+			AC.BackVertex();
+		}
+	}
+
+	RedrawWindow();
 }

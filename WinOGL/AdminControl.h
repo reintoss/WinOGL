@@ -71,13 +71,18 @@ private:
 public:
 
 	/* ボタン系 */
+
+	//描画モード
+	bool DrawButtonFlag = true;
+
+
+	//編集モード
+	bool SelectButtonFlag = false;
+
 	//XYZボタンが押されているかどうかのフラグ
 	bool AxisFlag = false;
 	//XYZ軸を描画する関数
 	void DrawAxis();
-
-	//編集ボタンが押されているかどうかのフラグ
-	bool SelectButtonFlag = false;
 
 	//全削除する関数
 	void AllDelete();
@@ -107,9 +112,12 @@ public:
 	//形状コピーボタンが押されているかどうかのフラグ
 	bool CopyButtonFlag = false;
 	//クリックした場所に形状をコピーする関数
-	void DrawCopyShape(float x, float y);
+	int DrawCopyShape(float x, float y);
 	//交差していた場合、コピーした形状を削除する関数
 	void DeleteCopyShape();
+
+	//描画中の点を元に戻す
+	void BackVertex();
 
 public:
 
@@ -226,6 +234,8 @@ public:
 	bool GetWheelButtonFlag();
 	//基点を描画する関数
 	void DrawBasePoint();
+	//基点を形状の重心にする関数
+	void CenterBase();
 	//マウス中央ボタンが押下されたときのx,y座標
 	float BaseX = 0;
 	float BaseY = 0;
@@ -235,8 +245,8 @@ public:
 	void DrawExpansionShape(short zDelta);
 	//拡大・縮小によって形状が交差した場合、元に戻す関数
 	void ShapeExepansionCancel();
-	//縮小しすぎを防ぐ
-	bool ExpansionJudge();
+	//拡大・縮小しすぎを防ぐ
+	bool ExpansionJudge(CRect rect);
 
 	//shape_head2がNULLかどうか判定する関数
 	bool shape_head2_NULLJudge();
