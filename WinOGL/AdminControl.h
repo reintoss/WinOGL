@@ -121,8 +121,13 @@ public:
 
 public:
 
+	/* 点の選択 */
+
 	//選択した点の色を変える関数（実際に色を変えるのはDraw()内）
 	int SelectVertex(float x, float y);
+
+
+	/* 形状の選択 */
 
 	//選択した形状の色を変える関数（実際に色を変えるのはDraw()内）
 	void SelectShape(float x, float y);
@@ -147,11 +152,16 @@ public:
 
 	int d[1140] = { 0 };
 
+
+	/* 線の選択 */
+
 	//選択した辺の色を変える関数（実際に色を変えるのはDraw()内）
 	int SelectLine(float x, float y);
 	//点と線の距離を求め返却する関数
 	float VtoL_Distance(CVertex* vp1, CVertex* vp2, CVertex* vp);
 
+
+	/* 形状が閉じているかどうか(描画中ではないか) */
 
 	//被選択のフラグをリセットする関数
 	void NotSelectFlagReset();
@@ -161,6 +171,9 @@ public:
 	bool GetShapeCloseFlag();
 	//ShapeCloseFlagをセットする関数
 	void SetShapeCloseFlag(bool f);
+
+
+	/* 点の移動 */
 
 	//マウスがムーブした場所に点を描画する関数
 	void DrawMoveVertex(float x, float y, float mx, float my);
@@ -196,10 +209,16 @@ public:
 	//移動させた点によって交差していた場合、点を元に戻す関数
 	void VMoveCancel();
 
+
+	/* 点の挿入 */
+
 	//線にダブルクリックで点を挿入する関数
 	void InsertVertex(float x, float y);
 	//選択されている線があるか判定する関数
 	bool SelectLineNowJudge();
+
+
+	/* 点の削除 */
 
 	//左クリックで点を削除する関数
 	int DeleteVertex(float x, float y);
@@ -207,6 +226,9 @@ public:
 	bool GaihouJudge3(CShape* HoldS, CVertex* del);
 	//左クリックで形状を削除する関数
 	void DeleteShape(float x, float y);
+
+
+	/* 形状の移動 */
 
 	//マウスがムーブした場所にShapeを描画する関数
 	bool DrawMoveShape(float x, float y, float mx, float my);
@@ -226,6 +248,9 @@ public:
 	void ShapeMoveCancel();
 	//shape_head2をリセットする関数
 	void Reset_shape_head2();
+
+
+	/* 形状の拡大・縮小 */
 
 	//マウスの中央ボタンが押下されたか
 	bool WheelButtonFlag = false;
@@ -247,6 +272,9 @@ public:
 	void ShapeExepansionCancel();
 	//拡大・縮小しすぎを防ぐ
 	bool ExpansionJudge(CRect rect);
+
+
+	/* 形状の回転 */
 
 	//shape_head2がNULLかどうか判定する関数
 	bool shape_head2_NULLJudge();

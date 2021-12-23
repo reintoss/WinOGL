@@ -478,6 +478,7 @@ void CAdminControl::CreateShape(float x, float y)
     //1“_–Ú‚Í
     else if (shape_head->CountVertex() < 1) {
         shape_head->AddVertex(x, y);
+        ShapeCloseFlag = false;
     }
     //2,3“_–Ú‚Í
     else if (shape_head->CountVertex() < 3) {

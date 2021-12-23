@@ -352,6 +352,9 @@ void CWinOGLView::OnMButtonDown(UINT nFlags, CPoint point)
 					if (AC.ShapeMoveCrossJudge() == true) {
 						AC.ShapeMoveCancel();
 					}
+					else if (AC.ExpansionJudge(rect) == true) { //回転で形状が画面外にいった場合
+						AC.ShapeMoveCancel();
+					}
 				}
 				AC.ResetHoldS();
 				AC.Reset_shape_head2();
@@ -363,7 +366,7 @@ void CWinOGLView::OnMButtonDown(UINT nFlags, CPoint point)
 				if (AC.ShapeMoveCrossJudge() == true) {
 					AC.ShapeMoveCancel();
 				}
-				else if (AC.ExpansionJudge(rect) == true) {
+				else if (AC.ExpansionJudge(rect) == true) { //拡大縮小しすぎの場合
 					AC.ShapeMoveCancel();
 				}
 			}
@@ -408,7 +411,7 @@ void CWinOGLView::OnRButtonDown(UINT nFlags, CPoint point)
 
 		if (AC.DeleteVertex(clickX_R, clickY_R) != 1) { //点の削除
 			if (AC.SelectLineNowJudge() == true) { //選択している線がある場合
-				AC.InsertVertex(clickX, clickY); //点の挿入
+				AC.InsertVertex(clickX_R, clickY_R); //点の挿入
 			}
 			else if (AC.GetWheelButtonFlag() == false && AC.GetShapeMoveNowJudge() == false && AC.GetRButtonFlag() == false) { //図形が赤色ではない場合
 				AC.DeleteShape(clickX_R, clickY_R);
