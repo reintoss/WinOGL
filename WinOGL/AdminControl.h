@@ -17,8 +17,11 @@ public:
 	//点をshape_headに追加する関数
 	void AddShape();
 
-	//点をshape_headに追加する関数
+	//点をshape_head2に追加する関数
 	void AddShape2();
+
+	//点をshape_head3に追加する関数
+	void AddShape3();
 
 	//2点間の距離を求め返却する関数
 	float Distance(CVertex* s, float x, float y);
@@ -67,6 +70,8 @@ private:
 	//形状リストのヘッド
 	CShape* shape_head = NULL;
 	CShape* shape_head2 = NULL; //形状一時保持用
+	CShape* shape_head3 = NULL; //形状塗りつぶし用
+
 
 public:
 
@@ -119,6 +124,28 @@ public:
 	//描画中の点を元に戻す
 	void BackVertex();
 
+	//線の太さを変える(+の場合はtrue,-の場合はfalseを受け取る)
+	void LineSizeChange(bool f);
+	//点のサイズ
+	float POINTSIZE = 11.4;
+	//線のサイズ
+	float LINESIZE = 2.0;
+
+	//形状の塗りつぶしボタンが押されているかどうかのフラグ
+	bool ShapeFillButtonFlag = false;
+	//形状を塗りつぶす関数
+	void Shape_Fill();
+	//三角形の中に点が内包しているかの判定関数
+	bool NaihouJudge3(CShape* nowS, CVertex* a, CVertex* b, CVertex* c);
+	//描画する三角形の辺が、他の辺と交差するか判定する
+	bool CrossJudge3(CShape* startS, CVertex* a, CVertex* b, CVertex* c);
+	//三角形が図形の外かどうかを判定する
+	bool ShapeInJudge(CShape* startS, CVertex* a, CVertex* b, CVertex* c);
+	//与えられた2つの点が同じかどうかを判定する
+	bool SameVertexJudge(CVertex* a, CVertex* b);
+	//shape_head3をリセットする関数
+	void Reset_shape_head3();
+
 public:
 
 	/* 点の選択 */
@@ -133,24 +160,8 @@ public:
 	void SelectShape(float x, float y);
 	//打った点が内包しているかの判定関数(引数に与えたShapeのみ見る)
 	bool NaihouJudge2(CShape* nowS, float x, float y);
-	//形状内を塗りつぶす関数
-	void DrawShape(CShape* nowS);
-	//三角形が図形の外かどうかを判定する
-	bool ShapeInJudge(CShape* startS, CVertex* a, CVertex* b, CVertex* c);
-	//描画する三角形の辺が、他の辺と交差するか判定する
-	bool CrossJudge3(CShape* startS, CVertex* a, CVertex* b, CVertex* c);
-	//与えられた2つの点が同じかどうかを判定する
-	bool SameVertexJudge(CVertex* a, CVertex* b);
-	//三角形の中に点が内包しているかの判定関数
-	bool NaihouJudge3(CShape* nowS, CVertex* a, CVertex* b, CVertex* c);
-	//3点の組み合わせ判定関数
-	bool CombinationJudge(CShape* nowS, int a, int b, int c, int f);
-	//nC3を求める関数
-	int Combination(int n, int r);
-	//Combination()をこれ以上行うかのフラグ
-	bool CombinationFlag = false;
-
-	int d[1140] = { 0 };
+	//形状を選択する関数
+	void DrawSelectShape(CShape* nowS);
 
 
 	/* 線の選択 */

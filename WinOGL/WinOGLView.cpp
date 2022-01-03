@@ -33,31 +33,26 @@ BEGIN_MESSAGE_MAP(CWinOGLView, CView)
 	ON_COMMAND(ID_EDIT_SELECT, &CWinOGLView::OnEditSelect)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_SELECT, &CWinOGLView::OnUpdateEditSelect)
 	ON_WM_MOUSEMOVE()
-//	ON_WM_RBUTTONDOWN()
-//	ON_WM_RBUTTONUP()
 	ON_WM_LBUTTONUP()
 	ON_WM_LBUTTONDBLCLK()
 	ON_COMMAND(ID_ALL_DELETE, &CWinOGLView::OnAllDelete)
-//	ON_UPDATE_COMMAND_UI(ID_ALL_DELETE, &CWinOGLView::OnUpdateAllDelete)
 ON_WM_RBUTTONDOWN()
-//ON_UPDATE_COMMAND_UI(ID_ALL_DELETE, &CWinOGLView::OnUpdateAllDelete)
 ON_COMMAND(ID_SQUARE, &CWinOGLView::OnSquare)
 ON_UPDATE_COMMAND_UI(ID_SQUARE, &CWinOGLView::OnUpdateSquare)
-//ON_COMMAND(ID_STRAIGHT, &CWinOGLView::OnStraight)
-//ON_UPDATE_COMMAND_UI(ID_STRAIGHT, &CWinOGLView::OnUpdateStraight)
 ON_COMMAND(ID_STRAIGHT, &CWinOGLView::OnStraight)
 ON_UPDATE_COMMAND_UI(ID_STRAIGHT, &CWinOGLView::OnUpdateStraight)
-//ON_WM_MOUSEHWHEEL()
 ON_WM_MBUTTONDOWN()
 ON_WM_MOUSEWHEEL()
-//ON_WM_MBUTTONDBLCLK()
-//ON_WM_RBUTTONDBLCLK()
 ON_COMMAND(ID_COPY, &CWinOGLView::OnCopy)
 ON_UPDATE_COMMAND_UI(ID_COPY, &CWinOGLView::OnUpdateCopy)
 ON_COMMAND(ID_DRAWMODE, &CWinOGLView::OnDrawmode)
 ON_UPDATE_COMMAND_UI(ID_DRAWMODE, &CWinOGLView::OnUpdateDrawmode)
 ON_COMMAND(ID_CENTERBASE, &CWinOGLView::OnCenterbase)
 ON_COMMAND(ID_BACK_VERTEX, &CWinOGLView::OnBackVertex)
+ON_COMMAND(ID_LINESIZE_P, &CWinOGLView::OnLinesizeP)
+ON_COMMAND(ID_LINESIZE_M, &CWinOGLView::OnLinesizeM)
+ON_COMMAND(ID_Shape_FILL, &CWinOGLView::OnShapeFill)
+ON_UPDATE_COMMAND_UI(ID_Shape_FILL, &CWinOGLView::OnUpdateShapeFill)
 END_MESSAGE_MAP()
 
 // CWinOGLView コンストラクション/デストラクション
@@ -110,7 +105,7 @@ void CWinOGLView::OnDraw(CDC* pDC)
 	wglMakeCurrent(pDC -> m_hDC, m_hRC);
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT /* | GL_DEPTH_BUFFER_BIT */);
-	
+
 	AC.Draw(); //問8.1
 
 	glFlush();
@@ -204,11 +199,18 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 				AC.DrawStraight(clickX, clickY);
 			}
 		}
-		else {
-			//マウスが動いていない場合、選択モード
+		else { //マウスが動いていない場合、選択モード
+
+			//コピーモードの場合
 			if (AC.CopyButtonFlag == true) {
-				AC.SelectShape(clickX, clickY);
-				
+				if (AC.GetShapeMoveNowJudge() == true) {
+					if (AC.ShapeMoveCrossJudge() == true) {
+						AC.ShapeMoveCancel();
+					}
+				}
+				else {
+					AC.SelectShape(clickX, clickY);
+				}
 			}
 			else if (AC.GetVertexMoveNowJudge() == false && AC.GetShapeMoveNowJudge() == false) {
 				if (AC.SelectVertex(clickX, clickY) != 1) {
@@ -250,7 +252,7 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 void CWinOGLView::OnMouseMove(UINT nFlags, CPoint point)
 {
 
-	if (AC.GetBasePointFlag() == false && AC.CopyButtonFlag == false) { //基点がある場合またはコピーモードの場合は無効
+	if (AC.GetBasePointFlag() == false /*&& AC.CopyButtonFlag == false*/) { //基点がある場合またはコピーモードの場合は無効
 		CRect rect;
 		GetClientRect(rect); // 描画領域の大きさを取得
 
@@ -340,6 +342,7 @@ void CWinOGLView::OnMButtonDown(UINT nFlags, CPoint point)
 
 	if (AC.SelectButtonFlag == true) {
 		if (AC.GetWheelButtonFlag() == false) {  //基点がない場合
+			AC.CopyButtonFlag = false;
 			if (AC.GetRButtonFlag() == false) { //回転基点がなければ、拡大縮小基点を追加
 				AC.SetBaseXY(BaseX, BaseY);
 				AC.SetWheelButtonFlag(true);
@@ -682,15 +685,24 @@ void CWinOGLView::OnAllDelete()
 
 void CWinOGLView::OnCopy()
 {
-	if (AC.SelectButtonFlag == true) {  //EDITモードがオンの時のみ使用可
-		if (AC.CopyButtonFlag == false) {
-			if (AC.GetBasePointFlag() == false) { //基点がある場合は解除できない
-				AC.CopyButtonFlag = true;
-				AC.ResetSelectVL();
+
+	if (AC.GetShapeCloseFlag() == true) { //形状が閉じていない場合は選択できない
+		if (AC.GetNoVertex() == false) { //形状が何もない場合は選択できない
+			if (AC.GetBasePointFlag() == false) { //基点がある場合は選択できない
+				if (AC.CopyButtonFlag == false) {
+					if (AC.GetBasePointFlag() == false) { //基点がある場合は解除できない
+						AC.DrawButtonFlag = false;
+						AC.StraightButtonFlag = false;
+						AC.SquareButtonFlag = false;
+						AC.SelectButtonFlag = true;
+						AC.CopyButtonFlag = true;
+						AC.ResetSelectVL();
+					}
+				}
+				else {
+					AC.CopyButtonFlag = false;
+				}
 			}
-		}
-		else {
-			AC.CopyButtonFlag = false;
 		}
 	}
 
@@ -754,4 +766,45 @@ void CWinOGLView::OnBackVertex()
 	}
 
 	RedrawWindow();
+}
+
+
+void CWinOGLView::OnLinesizeP()
+{
+	AC.LineSizeChange(true);
+
+	RedrawWindow();
+}
+
+
+void CWinOGLView::OnLinesizeM()
+{
+	AC.LineSizeChange(false);
+
+	RedrawWindow();
+}
+
+
+void CWinOGLView::OnShapeFill()
+{
+	if (AC.ShapeFillButtonFlag == false) {
+		AC.ShapeFillButtonFlag = true;
+	}
+	else {
+		AC.ShapeFillButtonFlag = false;
+		AC.Reset_shape_head3();
+	}
+
+	RedrawWindow();
+}
+
+
+void CWinOGLView::OnUpdateShapeFill(CCmdUI* pCmdUI)
+{
+	if (AC.ShapeFillButtonFlag == true) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
 }

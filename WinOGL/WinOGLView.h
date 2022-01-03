@@ -100,6 +100,10 @@ public:
 	afx_msg void OnUpdateDrawmode(CCmdUI* pCmdUI);
 	afx_msg void OnCenterbase();
 	afx_msg void OnBackVertex();
+	afx_msg void OnLinesizeP();
+	afx_msg void OnLinesizeM();
+	afx_msg void OnShapeFill();
+	afx_msg void OnUpdateShapeFill(CCmdUI* pCmdUI);
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン

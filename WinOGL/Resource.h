@@ -26,15 +26,23 @@
 #define ID_CENTERBASE                   32797
 #define ID_32800                        32800
 #define ID_BACK                         32801
-#define ID_BUTTON32807                  32807
 #define ID_BACK_VERTEX                  32808
+#define ID_32809                        32809
+#define ID_32810                        32810
+#define ID_LINESIZE_P                   32811
+#define ID_LINESIZE_M                   32812
+#define ID_32814                        32814
+#define ID_Shape_Draw                   32815
+#define ID_ShapeFill                    32816
+#define ID_Shape_FILL                   32817
+#define ID_BUTTON32818                  32818
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        310
-#define _APS_NEXT_COMMAND_VALUE         32809
+#define _APS_NEXT_COMMAND_VALUE         32819
 #define _APS_NEXT_CONTROL_VALUE         1000
 #define _APS_NEXT_SYMED_VALUE           310
 #endif
