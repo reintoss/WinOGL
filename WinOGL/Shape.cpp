@@ -137,3 +137,19 @@ bool CShape::GetSelectShapeFlag()
 {
     return SelectShapeFlag;
 }
+
+void CShape::SetAnyVertexMoveNowFlag(bool f)
+{
+    if (f == true) {
+        AnyVertexMoveNowFlag = true;
+    }
+    else {
+        AnyVertexMoveNowFlag = false;
+    }
+}
+
+bool CShape::GetAnyVertexMoveNowFlag()
+{
+    return AnyVertexMoveNowFlag;
+}
+

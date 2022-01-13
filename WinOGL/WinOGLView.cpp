@@ -53,6 +53,9 @@ ON_COMMAND(ID_LINESIZE_P, &CWinOGLView::OnLinesizeP)
 ON_COMMAND(ID_LINESIZE_M, &CWinOGLView::OnLinesizeM)
 ON_COMMAND(ID_Shape_FILL, &CWinOGLView::OnShapeFill)
 ON_UPDATE_COMMAND_UI(ID_Shape_FILL, &CWinOGLView::OnUpdateShapeFill)
+ON_COMMAND(ID_VIEW_MODE, &CWinOGLView::OnViewMode)
+ON_UPDATE_COMMAND_UI(ID_VIEW_MODE, &CWinOGLView::OnUpdateViewMode)
+ON_WM_RBUTTONUP()
 END_MESSAGE_MAP()
 
 // CWinOGLView コンストラクション/デストラクション
@@ -106,14 +109,20 @@ void CWinOGLView::OnDraw(CDC* pDC)
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT /* | GL_DEPTH_BUFFER_BIT */);
 
-	AC.Draw(); //問8.1
+    //視点更新
+	glLoadIdentity();
+	glScalef(AC.Scale, AC.Scale, AC.Scale);
+	glTranslatef(AC.TransX, AC.TransY, 0.0);
+	glRotatef(AC.RotateX, 1.0, 0.0, 0.0);
+	glRotatef(AC.RotateY, 0.0, 1.0, 0.0);
 
+	AC.Draw(); //問8.1
 	glFlush();
 	SwapBuffers(pDC -> m_hDC);
 
 	wglMakeCurrent(pDC -> m_hDC, NULL);
 
-	// TODO: この場所にネイティブ データ用の描画コードを追加します。
+	//glEnable(GL_DEPTH_TEST);
 }
 
 
@@ -144,34 +153,34 @@ CWinOGLDoc* CWinOGLView::GetDocument() const // デバッグ以外のバージ�
 void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 {
 
-	if (AC.GetBasePointFlag() == false) { //基点がある場合は無効
-		CRect rect;
-		GetClientRect(rect); // 描画領域の大きさを取得
+if (AC.GetBasePointFlag() == false) { //基点がある場合は無効
+	CRect rect;
+	GetClientRect(rect); // 描画領域の大きさを取得
 
-		clickX_L = (float)point.x / rect.Width(); //ex.1920を1とする
-		clickX_L = clickX_L * 2 - 1; //区間[0,1]を[-1,0,1]にする
-		if (rect.Width() > rect.Height()) { //横長の時
-			clickX_L = clickX_L * ((float)rect.Width() / rect.Height());
-		}
-
-		clickY_L = (float)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
-		clickY_L = clickY_L * 2 - 1; //区間[0,1]を[-1,0,1]にする
-		if (rect.Height() > rect.Width()) { //縦長の時
-			clickY_L = clickY_L * ((float)rect.Height() / rect.Width());
-		}
-
-		LButtonDownFlag = true;
+	clickX_L = (float)point.x / rect.Width(); //ex.1920を1とする
+	clickX_L = clickX_L * 2 - 1; //区間[0,1]を[-1,0,1]にする
+	if (rect.Width() > rect.Height()) { //横長の時
+		clickX_L = clickX_L * ((float)rect.Width() / rect.Height());
 	}
 
-	RedrawWindow();
+	clickY_L = (float)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
+	clickY_L = clickY_L * 2 - 1; //区間[0,1]を[-1,0,1]にする
+	if (rect.Height() > rect.Width()) { //縦長の時
+		clickY_L = clickY_L * ((float)rect.Height() / rect.Width());
+	}
 
-	CView::OnLButtonDown(nFlags, point);
+	LButtonDownFlag = true;
+}
+
+RedrawWindow();
+
+CView::OnLButtonDown(nFlags, point);
 
 }
 
 void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 {
-	if (AC.GetBasePointFlag() == false) { //基点がある場合は無効
+	if (AC.GetBasePointFlag() == false && AC.ViewModeButtonFlag == false) { //基点がない&視点変更モードではない場合
 		CRect rect;
 		GetClientRect(rect); // 描画領域の大きさを取得
 
@@ -231,7 +240,6 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 			}
 		}
 
-
 		LButtonDownFlag = false;
 		AC.ResetVertexMoveNowJudge();
 		AC.ResetShapeMoveNowJudge();
@@ -240,7 +248,16 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 		AC.ResetHoldS();
 		AC.ResetAlreadySelectVertexFlag();
 		AC.ResetAlreadySelectShapeFlag();
+		AC.ResetAnyVertexMoveNowFlag();
 		AC.Reset_shape_head2();
+		AC.ShapePreX = 0.0;
+		AC.ShapePreY = 0.0;
+	}
+
+	if (AC.ViewModeButtonFlag == true) {
+		LButtonDownFlag = false;
+		AC.PreX = 0.0;
+		AC.PreY = 0.0;
 	}
 
 	RedrawWindow();
@@ -252,7 +269,7 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 void CWinOGLView::OnMouseMove(UINT nFlags, CPoint point)
 {
 
-	if (AC.GetBasePointFlag() == false /*&& AC.CopyButtonFlag == false*/) { //基点がある場合またはコピーモードの場合は無効
+	if (AC.GetBasePointFlag() == false) { //基点がない場合
 		CRect rect;
 		GetClientRect(rect); // 描画領域の大きさを取得
 
@@ -268,7 +285,15 @@ void CWinOGLView::OnMouseMove(UINT nFlags, CPoint point)
 			clickY_M = clickY_M * ((float)rect.Height() / rect.Width());
 		}
 
-		if (AC.SelectButtonFlag == true) {
+		if (AC.ViewModeButtonFlag == true) { //視点変更モードの場合
+			if (LButtonDownFlag == true) {
+				AC.TranslateUpdate(clickX_L, clickY_L, clickX_M, clickY_M);
+			}
+			else if (AC.RButtonDownFlag == true) {
+				AC.RotateUpdate(clickX_R, clickY_R, clickX_M, clickY_M);
+			}
+		}
+		else if (AC.SelectButtonFlag == true) { //EDITモードの場合
 			if (LButtonDownFlag == true) {
 				if (AC.DrawMoveShape(clickX_L, clickY_L, clickX_M, clickY_M) == false) {
 					AC.DrawMoveVertex(clickX_L, clickY_L, clickX_M, clickY_M);
@@ -286,7 +311,7 @@ void CWinOGLView::OnMouseMove(UINT nFlags, CPoint point)
 void CWinOGLView::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
 
-	if (AC.GetBasePointFlag() == false) { //基点がある場合は無効
+	if (AC.GetBasePointFlag() == false && AC.ViewModeButtonFlag == false) { //基点がない&視点変更モードではない場合
 		CRect rect;
 		GetClientRect(rect); // 描画領域の大きさを取得
 
@@ -314,6 +339,7 @@ void CWinOGLView::OnLButtonDblClk(UINT nFlags, CPoint point)
 		}
 
 	}
+
 	RedrawWindow();
 
 	AC.ResetHoldS();
@@ -325,56 +351,58 @@ void CWinOGLView::OnLButtonDblClk(UINT nFlags, CPoint point)
 void CWinOGLView::OnMButtonDown(UINT nFlags, CPoint point)
 {
 
-	CRect rect;
-	GetClientRect(rect); // 描画領域の大きさを取得
+	if (AC.ViewModeButtonFlag == false) { //視点変更モードではない場合
+		CRect rect;
+		GetClientRect(rect); // 描画領域の大きさを取得
 
-	BaseX = (float)point.x / rect.Width(); //ex.1920を1とする
-	BaseX = BaseX * 2 - 1; //区間[0,1]を[-1,0,1]にする
-	if (rect.Width() > rect.Height()) { //横長の時
-		BaseX = BaseX * ((float)rect.Width() / rect.Height());
-	}
+		BaseX = (float)point.x / rect.Width(); //ex.1920を1とする
+		BaseX = BaseX * 2 - 1; //区間[0,1]を[-1,0,1]にする
+		if (rect.Width() > rect.Height()) { //横長の時
+			BaseX = BaseX * ((float)rect.Width() / rect.Height());
+		}
 
-	BaseY = (float)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
-	BaseY = BaseY * 2 - 1; //区間[0,1]を[-1,0,1]にする
-	if (rect.Height() > rect.Width()) { //縦長の時
-		BaseY = BaseY * ((float)rect.Height() / rect.Width());
-	}
+		BaseY = (float)(rect.Height() - point.y) / rect.Height(); //ex.1080を1とする、y座標は左上が0なので反転
+		BaseY = BaseY * 2 - 1; //区間[0,1]を[-1,0,1]にする
+		if (rect.Height() > rect.Width()) { //縦長の時
+			BaseY = BaseY * ((float)rect.Height() / rect.Width());
+		}
 
-	if (AC.SelectButtonFlag == true) {
-		if (AC.GetWheelButtonFlag() == false) {  //基点がない場合
-			AC.CopyButtonFlag = false;
-			if (AC.GetRButtonFlag() == false) { //回転基点がなければ、拡大縮小基点を追加
-				AC.SetBaseXY(BaseX, BaseY);
-				AC.SetWheelButtonFlag(true);
-				AC.SetRButtonFlag(false);
-				AC.SetWheelUsedFlag(false);
+		if (AC.SelectButtonFlag == true) {
+			if (AC.GetWheelButtonFlag() == false) {  //基点がない場合
+				AC.CopyButtonFlag = false;
+				if (AC.GetRButtonFlag() == false) { //回転基点がなければ、拡大縮小基点を追加
+					AC.SetBaseXY(BaseX, BaseY);
+					AC.SetWheelButtonFlag(true);
+					AC.SetRButtonFlag(false);
+					AC.SetWheelUsedFlag(false);
+				}
+				else { //回転基点がある場合は、回転基点解除→交差判定
+					AC.SetRButtonFlag(false);
+					if (AC.shape_head2_NULLJudge() == false) { //shape_head2がNULLでなければ交差判定
+						if (AC.ShapeMoveCrossJudge() == true) {
+							AC.ShapeMoveCancel();
+						}
+						else if (AC.ExpansionJudge(rect) == true) { //回転で形状が画面外にいった場合
+							AC.ShapeMoveCancel();
+						}
+					}
+					AC.ResetHoldS();
+					AC.Reset_shape_head2();
+				}
 			}
-			else { //回転基点がある場合は、回転基点解除→交差判定
-				AC.SetRButtonFlag(false);
+			else { //拡大縮小基点がある場合は、拡大縮小基点解除→交差判定
+				AC.SetWheelButtonFlag(false);
 				if (AC.shape_head2_NULLJudge() == false) { //shape_head2がNULLでなければ交差判定
 					if (AC.ShapeMoveCrossJudge() == true) {
 						AC.ShapeMoveCancel();
 					}
-					else if (AC.ExpansionJudge(rect) == true) { //回転で形状が画面外にいった場合
+					else if (AC.ExpansionJudge(rect) == true) { //拡大縮小しすぎの場合
 						AC.ShapeMoveCancel();
 					}
 				}
 				AC.ResetHoldS();
 				AC.Reset_shape_head2();
 			}
-		}
-		else { //拡大縮小基点がある場合は、拡大縮小基点解除→交差判定
-			AC.SetWheelButtonFlag(false);
-			if (AC.shape_head2_NULLJudge() == false) { //shape_head2がNULLでなければ交差判定
-				if (AC.ShapeMoveCrossJudge() == true) {
-					AC.ShapeMoveCancel();
-				}
-				else if (AC.ExpansionJudge(rect) == true) { //拡大縮小しすぎの場合
-					AC.ShapeMoveCancel();
-				}
-			}
-			AC.ResetHoldS();
-			AC.Reset_shape_head2();
 		}
 	}
 
@@ -402,8 +430,10 @@ void CWinOGLView::OnRButtonDown(UINT nFlags, CPoint point)
 		clickY_R = clickY_R * ((float)rect.Height() / rect.Width());
 	}
 
-	//編集ボタンが押されている場合のみ有効
-	if (AC.SelectButtonFlag == true) {
+	if (AC.ViewModeButtonFlag == true) { //視点変更モードの場合
+		AC.RButtonDownFlag = true;
+	}
+	else if (AC.SelectButtonFlag == true) { //編集ボタンが押されている場合
 		if (AC.GetRButtonFlag() == false) { //回転基点の追加
 			if (AC.GetWheelButtonFlag() == true && AC.GetWheelUsedFlag() == false) { //中央ボタンで基点が追加されているかつ、まだマウスホイールを動かしていない場合
 				AC.SetWheelButtonFlag(false);
@@ -432,6 +462,18 @@ void CWinOGLView::OnRButtonDown(UINT nFlags, CPoint point)
 	CView::OnRButtonDown(nFlags, point);
 }
 
+void CWinOGLView::OnRButtonUp(UINT nFlags, CPoint point)
+{
+	if (AC.ViewModeButtonFlag == true) {
+		AC.RButtonDownFlag = false;
+		AC.PreMouseX = 0.0;
+		AC.PreMouseY = 0.0;
+	}
+
+	RedrawWindow();
+
+	CView::OnRButtonUp(nFlags, point);
+}
 
 BOOL CWinOGLView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
@@ -444,6 +486,10 @@ BOOL CWinOGLView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	//右ボタンで基点が追加されていたら
 	else if(AC.GetRButtonFlag() == true){
 		AC.DrawRotateShape(zDelta); //回転する
+	}
+	//視点変更ボタンが押されていたら
+	else if (AC.ViewModeButtonFlag == true) {
+		AC.ScaleUpdate(zDelta); //視点の拡大・縮小
 	}
 
 	RedrawWindow();
@@ -672,6 +718,8 @@ void CWinOGLView::OnAllDelete()
 	if (AC.GetBasePointFlag() == false) { //基点がある場合は無効
 		AC.AllDelete();
 		AC.SetShapeCloseFlag(false);
+		AC.ViewModeButtonFlag = false;
+		AC.InitViewValue();
 		if (AC.SelectButtonFlag == true) {
 			AC.SelectButtonFlag = false;
 			AC.DrawButtonFlag = true;
@@ -807,4 +855,34 @@ void CWinOGLView::OnUpdateShapeFill(CCmdUI* pCmdUI)
 	else {
 		pCmdUI->SetCheck(false);
 	}
+}
+
+void CWinOGLView::OnViewMode()
+{
+	if (AC.GetNoVertex() == false && AC.GetBasePointFlag() == false) { //何か描画されている&基点がない場合
+		if (AC.ViewModeButtonFlag == false) {
+			AC.ViewModeButtonFlag = true;
+			AC.AxisFlag = true;
+		}
+		else {
+			//各数値を初期値に戻す
+			AC.InitViewValue();
+			AC.ViewModeButtonFlag = false;
+		}
+	}
+
+	RedrawWindow();
+}
+
+
+void CWinOGLView::OnUpdateViewMode(CCmdUI* pCmdUI)
+{
+
+	if (AC.ViewModeButtonFlag == true) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
+
 }

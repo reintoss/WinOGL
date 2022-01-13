@@ -20,7 +20,11 @@ private:
 	//前の形状リストを指すポインタ
 	CShape* pre_shape = NULL;
 
+	//形状が選択されているかどうかのフラグ
 	bool SelectShapeFlag = false;
+
+	//形状のある点が移動中かどうかのフラグ
+	bool AnyVertexMoveNowFlag = false;
 
 public:
 
@@ -52,9 +56,12 @@ public:
 	CVertex* AddVertex(float x, float y);
 	int CountVertex();
 
-	// 各形状のフラグをセット・取得する関数
+	//SelectShapeFlagをフラグをセット・取得する関数
 	void SetSelectShapeFlag(bool f);
 	bool GetSelectShapeFlag();
 
+	//AnyVertexMoveNowFlagをセット・取得する関数
+	void SetAnyVertexMoveNowFlag(bool f);
+	bool GetAnyVertexMoveNowFlag();
 };
 

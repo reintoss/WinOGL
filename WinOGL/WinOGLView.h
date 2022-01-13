@@ -104,6 +104,9 @@ public:
 	afx_msg void OnLinesizeM();
 	afx_msg void OnShapeFill();
 	afx_msg void OnUpdateShapeFill(CCmdUI* pCmdUI);
+	afx_msg void OnViewMode();
+	afx_msg void OnUpdateViewMode(CCmdUI* pCmdUI);
+	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン

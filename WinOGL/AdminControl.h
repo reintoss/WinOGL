@@ -146,6 +146,33 @@ public:
 	//shape_head3をリセットする関数
 	void Reset_shape_head3();
 
+	//視点変更ボタンが押されているかどうかのフラグ
+	bool ViewModeButtonFlag = false;
+	//視点の倍率を更新する関数
+	void ScaleUpdate(short zDelta);
+	//視点の倍率(初期値)
+	float Scale = 1.0;
+	//視点の平行移動量を更新する関数
+	void TranslateUpdate(float Lx, float Ly, float mx, float my);
+	//視点の平行移動量
+	float TransX = 0.0;
+	float TransY = 0.0;
+	//1フレーム前のx,y座標
+	float PreX = 0.0;
+	float PreY = 0.0;
+	//視点の回転量を更新する関数
+	void RotateUpdate(float Rx, float Ry, float mx, float my);
+	//視点の回転量
+	float RotateX = 0.0;
+	float RotateY = 0.0;
+	//1フレーム前のマウスのx,y座標
+	float PreMouseX = 0.0;
+	float PreMouseY = 0.0;
+	//右クリックのフラグ
+	bool RButtonDownFlag = false;
+	//各数値を初期化する関数
+	void InitViewValue();
+
 public:
 
 	/* 点の選択 */
@@ -211,6 +238,8 @@ public:
 	bool AlreadySelectVertexFlag = false;
 	//点移動時の選択判定のフラグをリセットする関数
 	void ResetAlreadySelectVertexFlag();
+	//AnyVertexMoveNowFlagをリセットする関数
+	void ResetAnyVertexMoveNowFlag();
 	//移動させた点によって交差する箇所があるか
 	bool VMoveCrossJudge();
 	//図形の中に図形があるか(与えたShapeのみ判定対象)
@@ -243,6 +272,12 @@ public:
 
 	//マウスがムーブした場所にShapeを描画する関数
 	bool DrawMoveShape(float x, float y, float mx, float my);
+	//形状の移動量
+	float ShapeMoveX = 0.0;
+	float ShapeMoveY = 0.0;
+	//形状の1フレーム前のx,y座標
+	float ShapePreX = 0.0;
+	float ShapePreY = 0.0;
 	//Shapeが選択済みかどうか
 	bool AlreadySelectShapeFlag = false;
 	//Shape移動時の選択判定のフラグをリセットする関数

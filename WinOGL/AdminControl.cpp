@@ -971,10 +971,6 @@ void CAdminControl::DrawSelectShape(CShape* nowS)
 //形状を塗りつぶす関数
 void CAdminControl::Shape_Fill()
 {
-
-    CVertex* v1_origin = NULL;
-    CVertex* v2_origin = NULL;
-    CVertex* v3_origin = NULL;
     CVertex* v1 = NULL;
     CVertex* v2 = NULL;
     CVertex* v3 = NULL;
@@ -983,115 +979,93 @@ void CAdminControl::Shape_Fill()
     int f = 0, v1f = 0, v2f = 0, v3f = 0;
 
     for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
-        //三角形の場合は普通に塗りつぶす
-        if (nowS->CountVertex() == 4) {
-            glBegin(GL_TRIANGLES);
-            glColor3f(0.8, 0.8, 0.8); //淡いグレー
-            glVertex2f(nowS->GetV()->GetX(), nowS->GetV()->GetY());
-            glVertex2f(nowS->GetV()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetY());
-            glVertex2f(nowS->GetV()->GetNext()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetNext()->GetY());
-            glEnd();
-        }
-        else if (nowS->CountVertex() >= 5) {
+        if (nowS->GetAnyVertexMoveNowFlag() == false) {
 
-            //shape_head3に形状をコピー
-            AddShape3();
-            for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
-                shape_head3->AddVertex(nowV->GetX(), nowV->GetY());
+            //三角形の場合は普通に塗りつぶす
+            if (nowS->CountVertex() == 4) {
+                glBegin(GL_TRIANGLES);
+                glColor3f(0.8, 0.8, 0.8); //淡いグレー
+                glVertex2f(nowS->GetV()->GetX(), nowS->GetV()->GetY());
+                glVertex2f(nowS->GetV()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetY());
+                glVertex2f(nowS->GetV()->GetNext()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetNext()->GetY());
+                glEnd();
             }
+            else if (nowS->CountVertex() >= 5) {
 
-            v1 = shape_head3->GetV();
-            v2 = v1->GetNext();
-            v3 = v2->GetNext();
-            v1_origin = nowS->GetV();
-            v2_origin = v1_origin->GetNext();
-            v3_origin = v2_origin->GetNext();
-
-            while (1) {
-                f = 0;
-
-                if (shape_head3->CountVertex() == 4) {
-                    glBegin(GL_TRIANGLES);
-                    glColor3f(0.8, 0.8, 0.8); //淡いグレー
-                    glVertex2f(v1_origin->GetX(), v1_origin->GetY());
-                    glVertex2f(v2_origin->GetX(), v2_origin->GetY());
-                    glVertex2f(v3_origin->GetX(), v3_origin->GetY());
-                    glEnd();
-                    break;
+                //shape_head3に形状をコピー
+                AddShape3();
+                for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+                    shape_head3->AddVertex(nowV->GetX(), nowV->GetY());
                 }
 
-                if (NaihouJudge3(shape_head3, v1, v2, v3) == false) { //三角形の中に図形の点がない
-                    if (CrossJudge3(shape_head3, v1, v2, v3) == false) { //三角形が図形の辺と交差しない
+                v1 = shape_head3->GetV();
+                v2 = v1->GetNext();
+                v3 = v2->GetNext();
+
+                while (1) {
+                    f = 0;
+
+                    if (shape_head3->CountVertex() == 4) {
+                        glBegin(GL_TRIANGLES);
+                        glColor3f(0.8, 0.8, 0.8); //淡いグレー
+                        glVertex2f(v1->GetX(), v1->GetY());
+                        glVertex2f(v2->GetX(), v2->GetY());
+                        glVertex2f(v3->GetX(), v3->GetY());
+                        glEnd();
+                        break;
+                    }
+
+                    if (NaihouJudge3(shape_head3, v1, v2, v3) == false) { //三角形の中に図形の点がない
+                        //if (CrossJudge3(shape_head3, v1, v2, v3) == false) { //三角形が図形の辺と交差しない
                         if (ShapeInJudge(shape_head3, v1, v2, v3) == true) { //三角形の重心が図形の中にある
                             f = 1;
                             glBegin(GL_TRIANGLES);
                             glColor3f(0.8, 0.8, 0.8); //淡いグレー
-                            glVertex2f(v1_origin->GetX(), v1_origin->GetY());
-                            glVertex2f(v2_origin->GetX(), v2_origin->GetY());
-                            glVertex2f(v3_origin->GetX(), v3_origin->GetY());
+                            glVertex2f(v1->GetX(), v1->GetY());
+                            glVertex2f(v2->GetX(), v2->GetY());
+                            glVertex2f(v3->GetX(), v3->GetY());
                             glEnd();
                         }
+                        //}
                     }
-                }
 
-                if (f == 1) {
-                    //v2を消す
-                    if (v2 != shape_head->GetV() && v2->GetNext() != NULL) { //v2が始点かつ終点ではない場合
-                        v1->SetNext(v3);
-                        delete v2;
-                        v1 = shape_head3->GetV();
-                        v2 = v1->GetNext();
-                        v3 = v2->GetNext();
+                    if (f == 1) {
+                        //v2を消す
+                        if (v2 != shape_head->GetV() && v2->GetNext() != NULL) { //v2が始点かつ終点ではない場合
+                            v1->SetNext(v3);
+                            delete v2;
+                            v1 = shape_head3->GetV();
+                            v2 = v1->GetNext();
+                            v3 = v2->GetNext();
+                        }
+                        else {
+                            del = shape_head3->GetV();
+                            shape_head3->SetV(nowS->GetV()->GetNext());
+                            v1->SetNext(v3);
+                            delete del;
+                            delete v2;
+                            v1 = shape_head3->GetV();
+                            v2 = v1->GetNext();
+                            v3 = v2->GetNext();
+                        }
                     }
                     else {
-                        del = shape_head3->GetV();
-                        shape_head3->SetV(nowS->GetV()->GetNext());
-                        v1->SetNext(v3);
-                        delete del;
-                        delete v2;
-                        v1 = shape_head3->GetV();
-                        v2 = v1->GetNext();
-                        v3 = v2->GetNext();
-                    }
-                }
-                else {
-                    //v1,v2,v3をずらす
-                    if (v3->GetNext() != NULL) { //v3が終点ではない場合
-                        v1 = v1->GetNext();
-                        v2 = v1->GetNext();
-                        v3 = v2->GetNext();
-                    }
-                    else {
-                        v1 = v1->GetNext();
-                        v2 = shape_head3->GetV();
-                        v3 = v2->GetNext();
-                    }
-                }
-
-                //v1,v2,v3に対応した点を見つける
-                for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
-                    if (SameVertexJudge(nowV, v1) == true) {
-                        v1_origin = nowV;
-                        v1f = 1;
-                    }
-                    else if (SameVertexJudge(nowV, v2) == true) {
-                        v2_origin = nowV;
-                        v2f = 1;
-                    }
-                    else if (SameVertexJudge(nowV, v3) == true) {
-                        v3_origin = nowV;
-                        v3f = 1;
+                        //v1,v2,v3をずらす
+                        if (v3->GetNext() != NULL) { //v3が終点ではない場合
+                            v1 = v1->GetNext();
+                            v2 = v1->GetNext();
+                            v3 = v2->GetNext();
+                        }
+                        else {
+                            v1 = v1->GetNext();
+                            v2 = shape_head3->GetV();
+                            v3 = v2->GetNext();
+                        }
                     }
 
-                    if (v1f == 1 && v2f == 1 && v3f == 1) {
-                        v1f = 0;
-                        v2f = 0;
-                        v3f = 0;
-                        break;
-                    }
                 }
+                Reset_shape_head3();
             }
-            Reset_shape_head3();
         }
     }
 }
@@ -1215,6 +1189,66 @@ void CAdminControl::Reset_shape_head3()
     shape_head3 = NULL;
 }
 
+//視点の倍率を更新する関数
+void CAdminControl::ScaleUpdate(short zDelta)
+{
+    if (zDelta > 0) {
+        Scale += 0.1;
+    }
+    else {
+        if (Scale >= 0.1) {
+            Scale -= 0.1;
+        }
+    }
+
+}
+
+//視点の平行移動量を更新する関数
+void CAdminControl::TranslateUpdate(float Lx, float Ly, float mx, float my)
+{
+    
+    //1フレーム前がない場合、Pre座標は左クリックした座標
+    if (PreX == 0.0 && PreY == 0.0) {
+        PreX = Lx;
+        PreY = Ly;
+    }
+
+    TransX += mx - PreX;
+    TransY += my - PreY;
+
+    PreX = mx;
+    PreY = my;
+    
+}
+
+//視点の回転量を更新する関数
+void CAdminControl::RotateUpdate(float Rx, float Ry, float mx, float my)
+{
+
+    //1フレーム前がない場合、Pre座標は右クリックした座標
+    if (PreMouseX == 0.0 && PreMouseY == 0.0) {
+        PreMouseX = Rx;
+        PreMouseY = Ry;
+    }
+    
+    RotateX += (my - PreMouseY) * 20.0 * (-1.0);
+    RotateY += (mx - PreMouseX) * 20.0;
+
+    PreMouseX = mx;
+    PreMouseY = my;
+}
+
+//各数値を初期化する関数
+void CAdminControl::InitViewValue()
+{
+    Scale = 1.0;
+    TransX = 0.0;
+    TransY = 0.0;
+    RotateX = 0.0;
+    RotateY = 0.0;
+
+}
+
 //選択した辺の色を変える関数（実際に色を変えるのはDraw()内）
 int CAdminControl::SelectLine(float x, float y)
 {
@@ -1328,6 +1362,7 @@ void CAdminControl::DrawMoveVertex(float x, float y, float mx, float my)
                         originX = nowV->GetX();
                         originY = nowV->GetY();
                         AlreadySelectVertexFlag = true;
+                        nowS->SetAnyVertexMoveNowFlag(true);
                         break;
                     }
                 }
@@ -1379,6 +1414,14 @@ void CAdminControl::ResetHoldS()
 void CAdminControl::ResetAlreadySelectVertexFlag()
 {
     AlreadySelectVertexFlag = false;
+}
+
+//AnyVertexMoveNowFlagをリセットする関数
+void CAdminControl::ResetAnyVertexMoveNowFlag()
+{
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        nowS->SetAnyVertexMoveNowFlag(false);
+    }
 }
 
 //移動させた点によって交差する箇所があるか
@@ -1756,18 +1799,20 @@ bool CAdminControl::DrawMoveShape(float x, float y, float mx, float my)
     if (AlreadySelectShapeFlag == true) {
         ShapeMoveNowJudge = true;
 
-        for (CVertex* nowV = HoldS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
-            Center_X = Center_X + nowV->GetX();
-            Center_Y = Center_Y + nowV->GetY();
-            c++;
+        //1フレーム前がない場合、Pre座標は左クリックした座標
+        if (ShapePreX == 0.0 && ShapePreY == 0.0) {
+            ShapePreX = x;
+            ShapePreY = y;
         }
 
+        ShapeMoveX = mx - ShapePreX;
+        ShapeMoveY = my - ShapePreY;
+
+        ShapePreX = mx;
+        ShapePreY = my;
+
         for (CVertex* nowV = HoldS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
-
-            Diff_X = mx - (Center_X / c);
-            Diff_Y = my - (Center_Y / c);
-
-            nowV->SetXY(nowV->GetX() + Diff_X, nowV->GetY() + Diff_Y);
+            nowV->SetXY(nowV->GetX() + ShapeMoveX, nowV->GetY() + ShapeMoveY);
         }
     }
 

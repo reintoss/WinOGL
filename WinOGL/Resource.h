@@ -35,14 +35,15 @@
 #define ID_Shape_Draw                   32815
 #define ID_ShapeFill                    32816
 #define ID_Shape_FILL                   32817
-#define ID_BUTTON32818                  32818
+#define ID_VIEW_MODE                    32819
+#define ID_BUTTON32821                  32821
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        310
-#define _APS_NEXT_COMMAND_VALUE         32819
+#define _APS_NEXT_COMMAND_VALUE         32822
 #define _APS_NEXT_CONTROL_VALUE         1000
 #define _APS_NEXT_SYMED_VALUE           310
 #endif
