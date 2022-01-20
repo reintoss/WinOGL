@@ -1306,9 +1306,22 @@ void CAdminControl::SolidMake()
             glColor3f(0.5, 0.5, 0.5); //グレー(濃)
             glVertex3f(nowV->GetX(), nowV->GetY(), 0.0);
             glVertex3f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY(), 0.0);
-            glVertex3f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY(), 0.1);
-            glVertex3f(nowV->GetX(), nowV->GetY(), 0.1);
+            glVertex3f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY(), Depth);
+            glVertex3f(nowV->GetX(), nowV->GetY(), Depth);
             glEnd();
+        }
+    }
+}
+
+//奥行の値を更新する関数
+void CAdminControl::DepthUpdate(short zDelta)
+{
+    if (zDelta > 0) {
+        Depth += 0.03;
+    }
+    else {
+        if (Depth >= 0.03) {
+            Depth -= 0.03;
         }
     }
 }

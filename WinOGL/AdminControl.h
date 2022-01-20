@@ -179,6 +179,8 @@ public:
 	void SolidMake();
 	//奥行の値
 	float Depth = 0.1;
+	//奥行の値を更新する関数
+	void DepthUpdate(short zDelta);
 	//上面の形状を塗りつぶす関数
 	void Shape_Fill_Depth();
 

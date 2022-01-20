@@ -497,7 +497,12 @@ BOOL CWinOGLView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	}
 	//視点変更ボタンが押されていたら
 	else if (AC.ViewModeButtonFlag == true) {
-		AC.ScaleUpdate(zDelta); //視点の拡大・縮小
+		if (AC.SolidButtonFlag == true && AC.RButtonDownFlag == true) { //立体モードかつ右ボタンが押されている場合
+			AC.DepthUpdate(zDelta); //奥行の値を更新
+		}
+		else {
+			AC.ScaleUpdate(zDelta); //視点の拡大・縮小
+		}
 	}
 
 	RedrawWindow();
