@@ -8,7 +8,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#define PI 3.14159265
+#define PI 3.1415926535
 
 CAdminControl::CAdminControl() {
 
@@ -22,69 +22,78 @@ void CAdminControl::Draw() {
 
     CShape* nowS = shape_head;
 
-    while (nowS != NULL)
-    {
-
-        CVertex* nowV = nowS->GetV();
-
-        while (nowV != NULL)
+    if (SolidButtonFlag == false) { //立体描画中は点・線は描画しない
+        while (nowS != NULL)
         {
-            if (nowV->GetSelectVertexFlag() == true) {
-                if (VertexMoveNowJudge == true) { //点が移動中
-                    glColor3f(1.0, 0, 0); //赤
+
+            CVertex* nowV = nowS->GetV();
+
+            //点の描画
+            while (nowV != NULL)
+            {
+                if (nowV->GetSelectVertexFlag() == true) {
+                    if (VertexMoveNowJudge == true) { //点が移動中
+                        glColor3f(1.0, 0, 0); //赤
+                    }
+                    else { //点を選択
+                        glColor3f(0, 1.0, 1.0); //シアン
+                    }
                 }
-                else { //点を選択
+                else { //通常
+                    glColor3f(1.0, 1.0, 1.0); //白
+                }
+
+                glPointSize(POINTSIZE);
+                glBegin(GL_POINTS);
+                glVertex2f(nowV->GetX(), nowV->GetY());
+
+                nowV = nowV->GetNext();
+            }
+
+            glEnd();
+
+            nowV = nowS->GetV();
+
+            //線の描画
+            while (nowV != NULL)
+            {
+                if (nowV->GetSelectLineFlag() == false) {
+                    glColor3f(1.0, 1.0, 1.0); //白
+                }
+                else {
                     glColor3f(0, 1.0, 1.0); //シアン
                 }
+                glLineWidth(LINESIZE);
+                glBegin(GL_LINE_STRIP);
+
+                glVertex2f(nowV->GetX(), nowV->GetY());
+
+                if (nowV->GetNext() != NULL) {
+                    glVertex2f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY());
+                }
+                nowV = nowV->GetNext();
             }
-            else { //通常
-                glColor3f(1.0, 1.0, 1.0); //白
+            glEnd();
+
+
+            //SelectShapeFlagがtrueの時、形状を選択する
+            if (nowS->GetSelectShapeFlag() == true) {
+                DrawSelectShape(nowS);
             }
 
-            glPointSize(POINTSIZE);
-            glBegin(GL_POINTS);
-            glVertex2f(nowV->GetX(), nowV->GetY());
+            nowS = nowS->GetNextS();
 
-            nowV = nowV->GetNext();
         }
-
-        glEnd();
-
-        nowV = nowS->GetV();
-
-        while (nowV != NULL)
-        {
-            if (nowV->GetSelectLineFlag() == false) {
-                glColor3f(1.0, 1.0, 1.0); //白
-            }
-            else {
-                glColor3f(0, 1.0, 1.0); //シアン
-            }
-            glLineWidth(LINESIZE);
-            glBegin(GL_LINE_STRIP);
-
-            glVertex2f(nowV->GetX(), nowV->GetY());
-
-            if (nowV->GetNext() != NULL) {
-                glVertex2f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY());
-            }
-            nowV = nowV->GetNext();
-        }
-        glEnd();
-
-
-        //SelectShapeFlagがtrueの時、形状を選択する
-        if (nowS->GetSelectShapeFlag() == true) {
-            DrawSelectShape(nowS);
-        }
-
-        nowS = nowS->GetNextS();
-
     }
 
     //形状を塗りつぶす
     if (ShapeFillButtonFlag == true && NoVertex == false) {
         Shape_Fill();
+    }
+
+    //立体物を描画する
+    if (SolidButtonFlag == true) {
+        SolidMake();
     }
 
     //座標軸を描画する
@@ -977,14 +986,19 @@ void CAdminControl::Shape_Fill()
     CVertex* del = NULL;
 
     int f = 0, v1f = 0, v2f = 0, v3f = 0;
+    bool star = false;
 
     for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        star = false;
         if (nowS->GetAnyVertexMoveNowFlag() == false) {
 
+            if (nowS->CountVertex() == 11) {
+                    star = StarJudge(nowS);
+            }
             //三角形の場合は普通に塗りつぶす
             if (nowS->CountVertex() == 4) {
                 glBegin(GL_TRIANGLES);
-                glColor3f(0.8, 0.8, 0.8); //淡いグレー
+                    glColor3f(0.5, 0.5, 0.5); //グレー(濃)
                 glVertex2f(nowS->GetV()->GetX(), nowS->GetV()->GetY());
                 glVertex2f(nowS->GetV()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetY());
                 glVertex2f(nowS->GetV()->GetNext()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetNext()->GetY());
@@ -1007,7 +1021,12 @@ void CAdminControl::Shape_Fill()
 
                     if (shape_head3->CountVertex() == 4) {
                         glBegin(GL_TRIANGLES);
-                        glColor3f(0.8, 0.8, 0.8); //淡いグレー
+                        if (star == true) {
+                            glColor3f(1.0, 1.0, 0.0); //黄
+                        }
+                        else{
+                            glColor3f(0.5, 0.5, 0.5); //グレー(濃)
+                        }
                         glVertex2f(v1->GetX(), v1->GetY());
                         glVertex2f(v2->GetX(), v2->GetY());
                         glVertex2f(v3->GetX(), v3->GetY());
@@ -1016,17 +1035,20 @@ void CAdminControl::Shape_Fill()
                     }
 
                     if (NaihouJudge3(shape_head3, v1, v2, v3) == false) { //三角形の中に図形の点がない
-                        //if (CrossJudge3(shape_head3, v1, v2, v3) == false) { //三角形が図形の辺と交差しない
                         if (ShapeInJudge(shape_head3, v1, v2, v3) == true) { //三角形の重心が図形の中にある
                             f = 1;
                             glBegin(GL_TRIANGLES);
-                            glColor3f(0.8, 0.8, 0.8); //淡いグレー
+                            if (star == true) {
+                                glColor3f(1.0, 1.0, 0.0); //黄
+                            }
+                            else{
+                                glColor3f(0.5, 0.5, 0.5); //グレー(濃)
+                            }
                             glVertex2f(v1->GetX(), v1->GetY());
                             glVertex2f(v2->GetX(), v2->GetY());
                             glVertex2f(v3->GetX(), v3->GetY());
                             glEnd();
                         }
-                        //}
                     }
 
                     if (f == 1) {
@@ -1189,6 +1211,27 @@ void CAdminControl::Reset_shape_head3()
     shape_head3 = NULL;
 }
 
+//星型かどうか判定する関数
+bool CAdminControl::StarJudge(CShape* nowS)
+{
+
+    CVertex* vp1;
+    CVertex* vp2;
+    float sum = 0;
+
+
+    for (CVertex* vp = nowS->GetV(); vp->GetNext() != NULL; vp = vp->GetNext()->GetNext()) {
+        vp1 = vp->GetNext();
+        vp2 = vp->GetNext()->GetNext();
+        if (Kakudo(VectorX(vp1, vp), VectorY(vp1, vp), VectorX(vp1, vp2), VectorY(vp1, vp2)) >= (PI / 2)) {
+            return false;
+        }
+    }
+
+    return true;
+
+}
+
 //視点の倍率を更新する関数
 void CAdminControl::ScaleUpdate(short zDelta)
 {
@@ -1231,8 +1274,8 @@ void CAdminControl::RotateUpdate(float Rx, float Ry, float mx, float my)
         PreMouseY = Ry;
     }
     
-    RotateX += (my - PreMouseY) * 20.0 * (-1.0);
-    RotateY += (mx - PreMouseX) * 20.0;
+    RotateX += (my - PreMouseY) * 30.0 * (-1.0);
+    RotateY += (mx - PreMouseX) * 30.0;
 
     PreMouseX = mx;
     PreMouseY = my;
@@ -1247,6 +1290,142 @@ void CAdminControl::InitViewValue()
     RotateX = 0.0;
     RotateY = 0.0;
 
+}
+
+//形状を立体にする関数
+void CAdminControl::SolidMake()
+{
+
+    //上面の描画
+    Shape_Fill_Depth();
+
+    //側面の描画
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+            glBegin(GL_POLYGON);
+            glColor3f(0.5, 0.5, 0.5); //グレー(濃)
+            glVertex3f(nowV->GetX(), nowV->GetY(), 0.0);
+            glVertex3f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY(), 0.0);
+            glVertex3f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY(), 0.1);
+            glVertex3f(nowV->GetX(), nowV->GetY(), 0.1);
+            glEnd();
+        }
+    }
+}
+
+//上面の形状を塗りつぶす関数
+void CAdminControl::Shape_Fill_Depth()
+{
+    CVertex* v1 = NULL;
+    CVertex* v2 = NULL;
+    CVertex* v3 = NULL;
+    CVertex* del = NULL;
+
+    int f = 0, v1f = 0, v2f = 0, v3f = 0;
+    bool star = false;
+
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        star = false;
+        if (nowS->GetAnyVertexMoveNowFlag() == false) {
+
+            if (nowS->CountVertex() == 11) {
+                star = StarJudge(nowS);
+            }
+            //三角形の場合は普通に塗りつぶす
+            if (nowS->CountVertex() == 4) {
+                glBegin(GL_TRIANGLES);
+                glColor3f(0.5, 0.5, 0.5); //グレー(濃)
+                glVertex3f(nowS->GetV()->GetX(), nowS->GetV()->GetY(), Depth);
+                glVertex3f(nowS->GetV()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetY(), Depth);
+                glVertex3f(nowS->GetV()->GetNext()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetNext()->GetY(), Depth);
+                glEnd();
+            }
+            else if (nowS->CountVertex() >= 5) {
+
+                //shape_head3に形状をコピー
+                AddShape3();
+                for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+                    shape_head3->AddVertex(nowV->GetX(), nowV->GetY());
+                }
+
+                v1 = shape_head3->GetV();
+                v2 = v1->GetNext();
+                v3 = v2->GetNext();
+
+                while (1) {
+                    f = 0;
+
+                    if (shape_head3->CountVertex() == 4) {
+                        glBegin(GL_TRIANGLES);
+                        if (star == true) {
+                            glColor3f(1.0, 1.0, 0.0); //黄
+                        }
+                        else {
+                            glColor3f(0.5, 0.5, 0.5); //グレー(濃)
+                        }
+                        glVertex3f(v1->GetX(), v1->GetY(), Depth);
+                        glVertex3f(v2->GetX(), v2->GetY(), Depth);
+                        glVertex3f(v3->GetX(), v3->GetY(), Depth);
+                        glEnd();
+                        break;
+                    }
+
+                    if (NaihouJudge3(shape_head3, v1, v2, v3) == false) { //三角形の中に図形の点がない
+                        if (ShapeInJudge(shape_head3, v1, v2, v3) == true) { //三角形の重心が図形の中にある
+                            f = 1;
+                            glBegin(GL_TRIANGLES);
+                            if (star == true) {
+                                glColor3f(1.0, 1.0, 0.0); //黄
+                            }
+                            else {
+                                glColor3f(0.5, 0.5, 0.5); //グレー(濃)
+                            }
+                            glVertex3f(v1->GetX(), v1->GetY(), Depth);
+                            glVertex3f(v2->GetX(), v2->GetY(), Depth);
+                            glVertex3f(v3->GetX(), v3->GetY(), Depth);
+                            glEnd();
+                        }
+                    }
+
+                    if (f == 1) {
+                        //v2を消す
+                        if (v2 != shape_head->GetV() && v2->GetNext() != NULL) { //v2が始点かつ終点ではない場合
+                            v1->SetNext(v3);
+                            delete v2;
+                            v1 = shape_head3->GetV();
+                            v2 = v1->GetNext();
+                            v3 = v2->GetNext();
+                        }
+                        else {
+                            del = shape_head3->GetV();
+                            shape_head3->SetV(nowS->GetV()->GetNext());
+                            v1->SetNext(v3);
+                            delete del;
+                            delete v2;
+                            v1 = shape_head3->GetV();
+                            v2 = v1->GetNext();
+                            v3 = v2->GetNext();
+                        }
+                    }
+                    else {
+                        //v1,v2,v3をずらす
+                        if (v3->GetNext() != NULL) { //v3が終点ではない場合
+                            v1 = v1->GetNext();
+                            v2 = v1->GetNext();
+                            v3 = v2->GetNext();
+                        }
+                        else {
+                            v1 = v1->GetNext();
+                            v2 = shape_head3->GetV();
+                            v3 = v2->GetNext();
+                        }
+                    }
+
+                }
+                Reset_shape_head3();
+            }
+        }
+    }
 }
 
 //選択した辺の色を変える関数（実際に色を変えるのはDraw()内）

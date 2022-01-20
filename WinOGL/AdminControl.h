@@ -64,8 +64,6 @@ public:
 	//メモリ解放
 	void FreeMemory();
 
-	//void FreeVertex();
-
 private:
 	//形状リストのヘッド
 	CShape* shape_head = NULL;
@@ -145,6 +143,8 @@ public:
 	bool SameVertexJudge(CVertex* a, CVertex* b);
 	//shape_head3をリセットする関数
 	void Reset_shape_head3();
+	//星型かどうか判定する関数
+	bool StarJudge(CShape* nowS);
 
 	//視点変更ボタンが押されているかどうかのフラグ
 	bool ViewModeButtonFlag = false;
@@ -172,6 +172,15 @@ public:
 	bool RButtonDownFlag = false;
 	//各数値を初期化する関数
 	void InitViewValue();
+
+	//立体ボタンが押されているかどうかのフラグ
+	bool SolidButtonFlag = false;
+	//形状を立体にする関数
+	void SolidMake();
+	//奥行の値
+	float Depth = 0.1;
+	//上面の形状を塗りつぶす関数
+	void Shape_Fill_Depth();
 
 public:
 

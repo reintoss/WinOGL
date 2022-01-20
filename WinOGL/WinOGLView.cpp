@@ -56,6 +56,8 @@ ON_UPDATE_COMMAND_UI(ID_Shape_FILL, &CWinOGLView::OnUpdateShapeFill)
 ON_COMMAND(ID_VIEW_MODE, &CWinOGLView::OnViewMode)
 ON_UPDATE_COMMAND_UI(ID_VIEW_MODE, &CWinOGLView::OnUpdateViewMode)
 ON_WM_RBUTTONUP()
+ON_COMMAND(ID_SOLID_MAKE, &CWinOGLView::OnSolidMake)
+ON_UPDATE_COMMAND_UI(ID_SOLID_MAKE, &CWinOGLView::OnUpdateSolidMake)
 END_MESSAGE_MAP()
 
 // CWinOGLView コンストラクション/デストラクション
@@ -107,7 +109,10 @@ void CWinOGLView::OnDraw(CDC* pDC)
 
 	wglMakeCurrent(pDC -> m_hDC, m_hRC);
 	glClearColor(0.0, 0.0, 0.0, 1.0);
-	glClear(GL_COLOR_BUFFER_BIT /* | GL_DEPTH_BUFFER_BIT */);
+	glClear(GL_COLOR_BUFFER_BIT  | GL_DEPTH_BUFFER_BIT );
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
 
     //視点更新
 	glLoadIdentity();
@@ -117,12 +122,15 @@ void CWinOGLView::OnDraw(CDC* pDC)
 	glRotatef(AC.RotateY, 0.0, 1.0, 0.0);
 
 	AC.Draw(); //問8.1
+
+	glDisable(GL_DEPTH_TEST);
+
 	glFlush();
+
 	SwapBuffers(pDC -> m_hDC);
 
 	wglMakeCurrent(pDC -> m_hDC, NULL);
 
-	//glEnable(GL_DEPTH_TEST);
 }
 
 
@@ -715,7 +723,7 @@ void CWinOGLView::OnUpdateStraight(CCmdUI* pCmdUI)
 
 void CWinOGLView::OnAllDelete()
 {
-	if (AC.GetBasePointFlag() == false) { //基点がある場合は無効
+	if (AC.GetBasePointFlag() == false && AC.ViewModeButtonFlag == false) { //基点がある場合または視点変更モードの時は無効
 		AC.AllDelete();
 		AC.SetShapeCloseFlag(false);
 		AC.ViewModeButtonFlag = false;
@@ -839,8 +847,10 @@ void CWinOGLView::OnShapeFill()
 		AC.ShapeFillButtonFlag = true;
 	}
 	else {
-		AC.ShapeFillButtonFlag = false;
-		AC.Reset_shape_head3();
+		if (AC.SolidButtonFlag == false) {
+			AC.ShapeFillButtonFlag = false;
+			AC.Reset_shape_head3();
+		}
 	}
 
 	RedrawWindow();
@@ -868,6 +878,7 @@ void CWinOGLView::OnViewMode()
 			//各数値を初期値に戻す
 			AC.InitViewValue();
 			AC.ViewModeButtonFlag = false;
+			AC.SolidButtonFlag = false;
 		}
 	}
 
@@ -885,4 +896,30 @@ void CWinOGLView::OnUpdateViewMode(CCmdUI* pCmdUI)
 		pCmdUI->SetCheck(false);
 	}
 
+}
+
+void CWinOGLView::OnSolidMake()
+{
+	if (AC.ViewModeButtonFlag == true) { //視点変更モードの場合
+		if (AC.SolidButtonFlag == false) {
+			AC.SolidButtonFlag = true;
+			AC.ShapeFillButtonFlag = true;
+		}
+		else {
+			AC.SolidButtonFlag = false;
+		}
+	}
+
+	RedrawWindow();
+}
+
+
+void CWinOGLView::OnUpdateSolidMake(CCmdUI* pCmdUI)
+{
+	if (AC.SolidButtonFlag == true) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
 }
