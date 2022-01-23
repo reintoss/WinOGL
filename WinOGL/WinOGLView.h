@@ -109,6 +109,9 @@ public:
 	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnSolidMake();
 	afx_msg void OnUpdateSolidMake(CCmdUI* pCmdUI);
+	afx_msg void OnWireModel();
+	afx_msg void OnUpdateWireModel(CCmdUI* pCmdUI);
+	afx_msg void OnSolidSelect();
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン

@@ -133,6 +133,7 @@ public:
 	bool ShapeFillButtonFlag = false;
 	//形状を塗りつぶす関数
 	void Shape_Fill();
+
 	//三角形の中に点が内包しているかの判定関数
 	bool NaihouJudge3(CShape* nowS, CVertex* a, CVertex* b, CVertex* c);
 	//描画する三角形の辺が、他の辺と交差するか判定する
@@ -175,6 +176,8 @@ public:
 
 	//立体ボタンが押されているかどうかのフラグ
 	bool SolidButtonFlag = false;
+	//底面を塗りつぶす関数
+	void Shape_Fill2();
 	//形状を立体にする関数
 	void SolidMake();
 	//奥行の値
@@ -183,6 +186,22 @@ public:
 	void DepthUpdate(short zDelta);
 	//上面の形状を塗りつぶす関数
 	void Shape_Fill_Depth();
+	//時計回りで描画されたか判定する関数
+	bool Clockwise(CShape* nowS);
+
+	//ワイヤーモデルボタンが押されているかどうかのフラグ
+	bool WireButtonFlag = false;
+	//形状をワイヤーフレームモデルにする関数
+	void WireMake();
+
+	//立体選択ボタンが押されているかどうかのフラグ
+	bool SolidSelectButtonFlag = false;
+	//SelectShapeFlagをリセットする関数
+	void ResetSelectShapeFlag();
+	//立体物を選択する関数
+	void SelectSolid();
+	//選択中のソリッドモデルの辺を描画する関数
+	void DrawSelectSolidLine();
 
 public:
 

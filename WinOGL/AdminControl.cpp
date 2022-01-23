@@ -22,7 +22,7 @@ void CAdminControl::Draw() {
 
     CShape* nowS = shape_head;
 
-    if (SolidButtonFlag == false) { //立体描画中は点・線は描画しない
+    if (SolidButtonFlag == false && WireButtonFlag == false) { //立体描画中は点・線は描画しない
         while (nowS != NULL)
         {
 
@@ -86,15 +86,33 @@ void CAdminControl::Draw() {
         }
     }
 
+
     //形状を塗りつぶす
-    if (ShapeFillButtonFlag == true && NoVertex == false) {
+    if (ShapeFillButtonFlag == true && NoVertex == false && SolidButtonFlag == false) {
         Shape_Fill();
     }
 
     //立体物を描画する
     if (SolidButtonFlag == true) {
-        SolidMake();
+        //ライティング
+        float dif[4] = { 1.0, 1.0, 1.0, 1.0 }; //変数の定義
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, dif); //拡散反射光の設定
+        glLightfv(GL_LIGHT0, GL_AMBIENT, dif); //環境光の設定
+
+        glEnable(GL_LIGHT0); //LIGHT0を有効
+        glEnable(GL_LIGHTING); //ライティングを有効
+
+        SolidMake(); //底面・上面・側面を塗る
+
+        glDisable(GL_LIGHTING); //ライティングを無効
+        glDisable(GL_LIGHT0); //LIGHT0を無効
+
+        DrawSelectSolidLine(); //選択中のソリッドモデルの辺を描画する関数
     }
+    else if (WireButtonFlag == true) {
+        WireMake();
+    }
+
 
     //座標軸を描画する
     if (AxisFlag == true) {
@@ -540,6 +558,7 @@ void CAdminControl::CreateShape(float x, float y)
 //座標軸を描画する
 void CAdminControl::DrawAxis()
 {
+    glLineWidth(1.0);
     glBegin(GL_LINES);
     // x軸
     glColor3f(1.0, 0.0, 0.0);
@@ -988,8 +1007,49 @@ void CAdminControl::Shape_Fill()
     int f = 0, v1f = 0, v2f = 0, v3f = 0;
     bool star = false;
 
+    CVertex* vp = NULL;
+    CVertex* vp2 = NULL;
+    CVertex* vp3 = NULL;
+    float ax = 0, ay = 0, az = 0;
+    float bx = 0, by = 0, bz = 0;
+    float A = 0, B = 0;
+    float gaisekiX = 0, gaisekiY = 0, gaisekiZ = 0;
+    float gaisekiSize = 0;
+    float nx = 0, ny = 0, nz = 0;
+
     for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
         star = false;
+
+        //法線の計算
+        vp = nowS->GetV();
+        vp2 = vp->GetNext();
+        vp3 = vp2->GetNext();
+        ax = VectorX(vp, vp2);
+        ay = VectorY(vp, vp2);
+        az = 0;
+        bx = VectorX(vp, vp3);
+        by = VectorY(vp, vp3);
+        bz = 0;
+        gaisekiX = (ay * bz - az * by);
+        gaisekiY = (az * bx - ax * bz);
+        gaisekiZ = (ax * by - ay * bx);
+        A = sqrt(pow(ax, 2) + pow(ay, 2));
+        B = sqrt(pow(bx, 2) + pow(by, 2));
+        gaisekiSize = A * B * sin(Kakudo(ax, ay, bx, by));
+        if (gaisekiSize < 0) {
+            gaisekiSize *= -1;
+        }
+        nx = gaisekiX / gaisekiSize;
+        ny = gaisekiY / gaisekiSize;
+        nz = gaisekiZ / gaisekiSize;
+
+        //図形が時計回りで描画された場合→法線を逆向きに
+        if (Clockwise(nowS) == true) {
+            nx *= -1;
+            ny *= -1;
+            nz *= -1;
+        }
+
         if (nowS->GetAnyVertexMoveNowFlag() == false) {
 
             if (nowS->CountVertex() == 11) {
@@ -997,8 +1057,10 @@ void CAdminControl::Shape_Fill()
             }
             //三角形の場合は普通に塗りつぶす
             if (nowS->CountVertex() == 4) {
+
                 glBegin(GL_TRIANGLES);
-                    glColor3f(0.5, 0.5, 0.5); //グレー(濃)
+                glNormal3f(nx,ny,nz); //法線の設定
+                glColor3f(0.5, 0.5, 0.5); //グレー(濃)
                 glVertex2f(nowS->GetV()->GetX(), nowS->GetV()->GetY());
                 glVertex2f(nowS->GetV()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetY());
                 glVertex2f(nowS->GetV()->GetNext()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetNext()->GetY());
@@ -1021,6 +1083,7 @@ void CAdminControl::Shape_Fill()
 
                     if (shape_head3->CountVertex() == 4) {
                         glBegin(GL_TRIANGLES);
+                        glNormal3f(nx, ny, nz); //法線の設定
                         if (star == true) {
                             glColor3f(1.0, 1.0, 0.0); //黄
                         }
@@ -1038,6 +1101,7 @@ void CAdminControl::Shape_Fill()
                         if (ShapeInJudge(shape_head3, v1, v2, v3) == true) { //三角形の重心が図形の中にある
                             f = 1;
                             glBegin(GL_TRIANGLES);
+                            glNormal3f(nx, ny, nz); //法線の設定
                             if (star == true) {
                                 glColor3f(1.0, 1.0, 0.0); //黄
                             }
@@ -1292,42 +1356,8 @@ void CAdminControl::InitViewValue()
 
 }
 
-//形状を立体にする関数
-void CAdminControl::SolidMake()
-{
-
-    //上面の描画
-    Shape_Fill_Depth();
-
-    //側面の描画
-    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
-        for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
-            glBegin(GL_POLYGON);
-            glColor3f(0.5, 0.5, 0.5); //グレー(濃)
-            glVertex3f(nowV->GetX(), nowV->GetY(), 0.0);
-            glVertex3f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY(), 0.0);
-            glVertex3f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY(), Depth);
-            glVertex3f(nowV->GetX(), nowV->GetY(), Depth);
-            glEnd();
-        }
-    }
-}
-
-//奥行の値を更新する関数
-void CAdminControl::DepthUpdate(short zDelta)
-{
-    if (zDelta > 0) {
-        Depth += 0.03;
-    }
-    else {
-        if (Depth >= 0.03) {
-            Depth -= 0.03;
-        }
-    }
-}
-
-//上面の形状を塗りつぶす関数
-void CAdminControl::Shape_Fill_Depth()
+//底面を塗りつぶす関数
+void CAdminControl::Shape_Fill2()
 {
     CVertex* v1 = NULL;
     CVertex* v2 = NULL;
@@ -1337,20 +1367,59 @@ void CAdminControl::Shape_Fill_Depth()
     int f = 0, v1f = 0, v2f = 0, v3f = 0;
     bool star = false;
 
+    CVertex* vp = NULL;
+    CVertex* vp2 = NULL;
+    CVertex* vp3 = NULL;
+    float ax = 0, ay = 0, az = 0;
+    float bx = 0, by = 0, bz = 0;
+    float A = 0, B = 0;
+    float gaisekiX = 0, gaisekiY = 0, gaisekiZ = 0;
+    float gaisekiSize = 0;
+    float nx = 0, ny = 0, nz = 0;
+
     for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
-        star = false;
+
+        //法線の計算
+        vp = nowS->GetV();
+        vp2 = vp->GetNext();
+        vp3 = vp2->GetNext();
+        ax = VectorX(vp, vp2);
+        ay = VectorY(vp, vp2);
+        az = 0;
+        bx = VectorX(vp, vp3);
+        by = VectorY(vp, vp3);
+        bz = 0;
+        gaisekiX = (ay * bz - az * by);
+        gaisekiY = (az * bx - ax * bz);
+        gaisekiZ = (ax * by - ay * bx);
+        A = sqrt(pow(ax, 2) + pow(ay, 2));
+        B = sqrt(pow(bx, 2) + pow(by, 2));
+        gaisekiSize = A * B * sin(Kakudo(ax, ay, bx, by));
+        if (gaisekiSize < 0) {
+            gaisekiSize *= -1;
+        }
+        nx = gaisekiX / gaisekiSize;
+        ny = gaisekiY / gaisekiSize;
+        nz = gaisekiZ / gaisekiSize;
+
+        //図形が時計回りで描画された場合→法線を逆向きに
+        if (Clockwise(nowS) == true) {
+            nx *= -1;
+            ny *= -1;
+            nz *= -1;
+        }
+
         if (nowS->GetAnyVertexMoveNowFlag() == false) {
 
-            if (nowS->CountVertex() == 11) {
-                star = StarJudge(nowS);
-            }
             //三角形の場合は普通に塗りつぶす
             if (nowS->CountVertex() == 4) {
+
                 glBegin(GL_TRIANGLES);
+                glNormal3f(nx, ny, nz); //法線の設定
                 glColor3f(0.5, 0.5, 0.5); //グレー(濃)
-                glVertex3f(nowS->GetV()->GetX(), nowS->GetV()->GetY(), Depth);
-                glVertex3f(nowS->GetV()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetY(), Depth);
-                glVertex3f(nowS->GetV()->GetNext()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetNext()->GetY(), Depth);
+                glVertex2f(nowS->GetV()->GetX(), nowS->GetV()->GetY());
+                glVertex2f(nowS->GetV()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetY());
+                glVertex2f(nowS->GetV()->GetNext()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetNext()->GetY());
                 glEnd();
             }
             else if (nowS->CountVertex() >= 5) {
@@ -1370,15 +1439,11 @@ void CAdminControl::Shape_Fill_Depth()
 
                     if (shape_head3->CountVertex() == 4) {
                         glBegin(GL_TRIANGLES);
-                        if (star == true) {
-                            glColor3f(1.0, 1.0, 0.0); //黄
-                        }
-                        else {
-                            glColor3f(0.5, 0.5, 0.5); //グレー(濃)
-                        }
-                        glVertex3f(v1->GetX(), v1->GetY(), Depth);
-                        glVertex3f(v2->GetX(), v2->GetY(), Depth);
-                        glVertex3f(v3->GetX(), v3->GetY(), Depth);
+                        glNormal3f(nx, ny, nz); //法線の設定
+                        glColor3f(0.5, 0.5, 0.5); //グレー(濃)
+                        glVertex2f(v1->GetX(), v1->GetY());
+                        glVertex2f(v2->GetX(), v2->GetY());
+                        glVertex2f(v3->GetX(), v3->GetY());
                         glEnd();
                         break;
                     }
@@ -1387,15 +1452,16 @@ void CAdminControl::Shape_Fill_Depth()
                         if (ShapeInJudge(shape_head3, v1, v2, v3) == true) { //三角形の重心が図形の中にある
                             f = 1;
                             glBegin(GL_TRIANGLES);
+                            glNormal3f(nx, ny, nz); //法線の設定
                             if (star == true) {
                                 glColor3f(1.0, 1.0, 0.0); //黄
                             }
                             else {
                                 glColor3f(0.5, 0.5, 0.5); //グレー(濃)
                             }
-                            glVertex3f(v1->GetX(), v1->GetY(), Depth);
-                            glVertex3f(v2->GetX(), v2->GetY(), Depth);
-                            glVertex3f(v3->GetX(), v3->GetY(), Depth);
+                            glVertex2f(v1->GetX(), v1->GetY());
+                            glVertex2f(v2->GetX(), v2->GetY());
+                            glVertex2f(v3->GetX(), v3->GetY());
                             glEnd();
                         }
                     }
@@ -1437,6 +1503,440 @@ void CAdminControl::Shape_Fill_Depth()
                 }
                 Reset_shape_head3();
             }
+        }
+    }
+}
+
+//形状を立体にする関数
+void CAdminControl::SolidMake()
+{
+
+    //底面の描画
+    Shape_Fill2();
+
+    //上面の描画
+    Shape_Fill_Depth();
+
+    //側面の描画
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        CVertex* vp = NULL;
+        CVertex* vp2 = NULL;
+        CVertex* vp3 = NULL;
+        float ax = 0, ay = 0, az = 0;
+        float bx = 0, by = 0, bz = 0;
+        float A = 0, B = 0;
+        float gaisekiX = 0, gaisekiY = 0, gaisekiZ = 0;
+        float gaisekiSize = 0;
+        float nx = 0, ny = 0, nz = 0;
+
+        for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+
+            //法線の計算
+            vp = nowV; //(x,y,0)
+            vp2 = vp->GetNext(); //(x,y,0)
+            //vp3 = (x,y,Depth)
+
+            //ベクトルa：vp→vp2
+            ax = VectorX(vp, vp2);
+            ay = VectorY(vp, vp2);
+            az = 0;
+            //ベクトルb：vp→vp3
+            bx = 0;
+            by = 0;
+            bz = Depth;
+
+            gaisekiX = (ay * bz - az * by);
+            gaisekiY = (az * bx - ax * bz);
+            gaisekiZ = (ax * by - ay * bx);
+            A = sqrt(pow(ax, 2) + pow(ay, 2) + pow(az, 2));
+            B = sqrt(pow(bx, 2) + pow(by, 2) + pow(bz, 2));
+            gaisekiSize = A * B * 1.0; //長方形なのでsin90°=1.0
+            nx = gaisekiX / gaisekiSize;
+            ny = gaisekiY / gaisekiSize;
+            nz = gaisekiZ / gaisekiSize;
+
+            //図形が時計回りで描画された場合→法線を逆向きに
+            if (Clockwise(nowS) == true) {
+                nx *= -1;
+                ny *= -1;
+                nz *= -1;
+            }
+
+            glBegin(GL_POLYGON);
+            glNormal3f(nx, ny, nz); //法線の設定
+            if (nowS->GetSelectShapeFlag() == false) {
+                glColor3f(0.5, 0.5, 0.5); //グレー(濃)
+            }
+            else {
+                glColor3f(1, 1, 0); //グレー(濃)
+            }
+            glVertex3f(nowV->GetX(), nowV->GetY(), 0.0);
+            glVertex3f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY(), 0.0);
+            glVertex3f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY(), Depth);
+            glVertex3f(nowV->GetX(), nowV->GetY(), Depth);
+            glEnd();
+        }
+    }
+}
+
+//奥行の値を更新する関数
+void CAdminControl::DepthUpdate(short zDelta)
+{
+    if (zDelta > 0) {
+        Depth += 0.03;
+    }
+    else {
+        if (Depth >= 0.03) {
+            Depth -= 0.03;
+        }
+    }
+}
+
+//上面の形状を塗りつぶす関数
+void CAdminControl::Shape_Fill_Depth()
+{
+    CVertex* v1 = NULL;
+    CVertex* v2 = NULL;
+    CVertex* v3 = NULL;
+    CVertex* del = NULL;
+
+    int f = 0, v1f = 0, v2f = 0, v3f = 0;
+
+    CVertex* vp = NULL;
+    CVertex* vp2 = NULL;
+    CVertex* vp3 = NULL;
+    float ax = 0, ay = 0, az = 0;
+    float bx = 0, by = 0, bz = 0;
+    float A = 0, B = 0;
+    float gaisekiX = 0, gaisekiY = 0, gaisekiZ = 0;
+    float gaisekiSize = 0;
+    float nx = 0, ny = 0, nz = 0;
+    bool njudge = false;
+
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+
+        //法線の計算
+        vp = nowS->GetV();
+        vp2 = vp->GetNext();
+        vp3 = vp2->GetNext();
+        ax = VectorX(vp, vp2);
+        ay = VectorY(vp, vp2);
+        az = 0;
+        bx = VectorX(vp, vp3);
+        by = VectorY(vp, vp3);
+        bz = 0;
+        gaisekiX = (ay * bz - az * by);
+        gaisekiY = (az * bx - ax * bz);
+        gaisekiZ = (ax * by - ay * bx);
+        A = sqrt(pow(ax, 2) + pow(ay, 2));
+        B = sqrt(pow(bx, 2) + pow(by, 2));
+        gaisekiSize = A * B * sin(Kakudo(ax, ay, bx, by));
+        if (gaisekiSize < 0) {
+            gaisekiSize *= -1;
+        }
+        nx = gaisekiX / gaisekiSize;
+        ny = gaisekiY / gaisekiSize;
+        nz = gaisekiZ / gaisekiSize;
+
+        //図形が時計回りで描画された場合→法線を逆向きに
+        if (Clockwise(nowS) == true) {
+            nx *= -1;
+            ny *= -1;
+            nz *= -1;
+        }
+        //三角形の場合は普通に塗りつぶす
+        if (nowS->CountVertex() == 4) {
+            glBegin(GL_TRIANGLES);
+            glNormal3f(nx, ny, nz); //法線の設定
+            if (nowS->GetSelectShapeFlag() == false) {
+                glColor3f(0.5, 0.5, 0.5); //グレー(濃)
+            }
+            else {
+                glColor3f(1.0, 1.0, 0.8);
+            }
+            glVertex3f(nowS->GetV()->GetX(), nowS->GetV()->GetY(), Depth);
+            glVertex3f(nowS->GetV()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetY(), Depth);
+            glVertex3f(nowS->GetV()->GetNext()->GetNext()->GetX(), nowS->GetV()->GetNext()->GetNext()->GetY(), Depth);
+            glEnd();
+        }
+        else if (nowS->CountVertex() >= 5) {
+
+            //shape_head3に形状をコピー
+            AddShape3();
+            for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+                shape_head3->AddVertex(nowV->GetX(), nowV->GetY());
+            }
+
+            v1 = shape_head3->GetV();
+            v2 = v1->GetNext();
+            v3 = v2->GetNext();
+
+            while (1) {
+                f = 0;
+
+                if (shape_head3->CountVertex() == 4) {
+                    glBegin(GL_TRIANGLES);
+                    glColor3f(0.5, 0.5, 0.5); //グレー(濃)
+                    glVertex3f(v1->GetX(), v1->GetY(), Depth);
+                    glVertex3f(v2->GetX(), v2->GetY(), Depth);
+                    glVertex3f(v3->GetX(), v3->GetY(), Depth);
+                    glEnd();
+                    break;
+                }
+
+                if (NaihouJudge3(shape_head3, v1, v2, v3) == false) { //三角形の中に図形の点がない
+                    if (ShapeInJudge(shape_head3, v1, v2, v3) == true) { //三角形の重心が図形の中にある
+                        f = 1;
+                        glBegin(GL_TRIANGLES);
+                        if (njudge == false) {
+                            glNormal3f(nx, ny, nz); //法線の設定
+                            njudge = true;
+                        }
+                        glColor3f(0.5, 0.5, 0.5); //グレー(濃)
+                        glVertex3f(v1->GetX(), v1->GetY(), Depth);
+                        glVertex3f(v2->GetX(), v2->GetY(), Depth);
+                        glVertex3f(v3->GetX(), v3->GetY(), Depth);
+                        glEnd();
+                    }
+                }
+
+                if (f == 1) {
+                    //v2を消す
+                    if (v2 != shape_head->GetV() && v2->GetNext() != NULL) { //v2が始点かつ終点ではない場合
+                        v1->SetNext(v3);
+                        delete v2;
+                        v1 = shape_head3->GetV();
+                        v2 = v1->GetNext();
+                        v3 = v2->GetNext();
+                    }
+                    else {
+                        del = shape_head3->GetV();
+                        shape_head3->SetV(nowS->GetV()->GetNext());
+                        v1->SetNext(v3);
+                        delete del;
+                        delete v2;
+                        v1 = shape_head3->GetV();
+                        v2 = v1->GetNext();
+                        v3 = v2->GetNext();
+                    }
+                }
+                else {
+                    //v1,v2,v3をずらす
+                    if (v3->GetNext() != NULL) { //v3が終点ではない場合
+                        v1 = v1->GetNext();
+                        v2 = v1->GetNext();
+                        v3 = v2->GetNext();
+                    }
+                    else {
+                        v1 = v1->GetNext();
+                        v2 = shape_head3->GetV();
+                        v3 = v2->GetNext();
+                    }
+                }
+
+            }
+            Reset_shape_head3();
+        }
+
+    }
+}
+
+//時計回りで描画されたか判定する関数
+bool CAdminControl::Clockwise(CShape* nowS)
+{
+    CVertex* nowV = nowS->GetV();
+    CVertex* nextV = nowV->GetNext();
+
+    float sum = 0;
+
+    while (nextV != NULL)
+    {
+        sum = sum + (nowV->GetX() * nextV->GetY() - nextV->GetX() * nowV->GetY());
+
+        nowV = nowV->GetNext();
+        nextV = nextV->GetNext();
+    }
+
+    if (sum < 0){ //時計回りの場合
+        return true;
+    }
+    else {
+        return false; //反時計回りの場合
+    }
+}
+
+//形状をワイヤーフレームモデルにする関数
+void CAdminControl::WireMake()
+{
+    //底面の描画
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+
+            //点の描画
+            if (nowS->GetSelectShapeFlag() == false) {
+                glColor3f(1.0, 1.0, 1.0); //白
+            }
+            else {
+                glColor3f(0.0, 1.0, 1.0); //シアン
+            }
+            glPointSize(POINTSIZE);
+            glBegin(GL_POINTS);
+            glVertex2f(nowV->GetX(), nowV->GetY());
+            glEnd();
+
+            //線の描画
+            if (nowS->GetSelectShapeFlag() == false) {
+                glColor3f(1.0, 1.0, 1.0); //白
+            }
+            else {
+                glColor3f(0.0, 1.0, 1.0); //シアン
+            }
+            glLineWidth(LINESIZE);
+            glBegin(GL_LINE_STRIP);
+
+            glVertex2f(nowV->GetX(), nowV->GetY());
+
+            if (nowV->GetNext() != NULL) {
+                glVertex2f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY());
+            }
+            glEnd();
+        }
+    }
+
+    //上面の描画
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+
+            //点の描画
+            if (nowS->GetSelectShapeFlag() == false) {
+                glColor3f(1.0, 1.0, 1.0); //白
+            }
+            else {
+                glColor3f(0.0, 1.0, 1.0); //シアン
+            }
+            glPointSize(POINTSIZE);
+            glBegin(GL_POINTS);
+            glVertex3f(nowV->GetX(), nowV->GetY(),Depth);
+            glEnd();
+
+            //線の描画
+            if (nowS->GetSelectShapeFlag() == false) {
+                glColor3f(1.0, 1.0, 1.0); //白
+            }
+            else {
+                glColor3f(0.0, 1.0, 1.0); //シアン
+            }
+            glLineWidth(LINESIZE);
+            glBegin(GL_LINE_STRIP);
+
+            glVertex3f(nowV->GetX(), nowV->GetY(),Depth);
+
+            if (nowV->GetNext() != NULL) {
+                glVertex3f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY(), Depth);
+            }
+            glEnd();
+        }
+    }
+
+    //側面の描画
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+            //線の描画
+            if (nowS->GetSelectShapeFlag() == false) {
+                glColor3f(1.0, 1.0, 1.0); //白
+            }
+            else {
+                glColor3f(0.0, 1.0, 1.0); //シアン
+            }
+            glLineWidth(LINESIZE);
+            glBegin(GL_LINE_STRIP);
+
+            glVertex3f(nowV->GetX(), nowV->GetY(),0.0);
+            glVertex3f(nowV->GetX(), nowV->GetY(), Depth);
+
+            glEnd();
+        }
+    }
+}
+
+//SelectShapeFlagをリセットする関数
+void CAdminControl::ResetSelectShapeFlag()
+{
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        nowS->SetSelectShapeFlag(false);
+    }
+}
+
+//立体物を選択する関数
+void CAdminControl::SelectSolid()
+{
+    bool f = false;
+
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        if (nowS->GetSelectShapeFlag() == true) {
+            f = true;
+            nowS->SetSelectShapeFlag(false);
+            if (nowS->GetNextS() != NULL) {
+                nowS->GetNextS()->SetSelectShapeFlag(true);
+            }
+            break;
+        }
+    }
+
+    if (f == false) {
+        shape_head->GetNextS()->SetSelectShapeFlag(true);
+    }
+}
+
+//選択中のソリッドモデルの辺を描画する関数
+void CAdminControl::DrawSelectSolidLine()
+{
+
+    CShape* nowS = NULL;
+
+    for (CShape* nS = shape_head->GetNextS(); nS != NULL; nS = nS->GetNextS()) {
+        if (nS->GetSelectShapeFlag() == true) {
+            nowS = nS;
+        }
+    }
+
+    if (nowS != NULL) {
+
+        //底面の描画
+        for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+            glColor3f(0.0, 1.0, 1.0); //シアン
+            glLineWidth(5);
+            glBegin(GL_LINE_STRIP);
+            glVertex2f(nowV->GetX(), nowV->GetY());
+
+            if (nowV->GetNext() != NULL) {
+                glVertex2f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY());
+            }
+            glEnd();
+        }
+
+        //上面の描画
+        for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
+            glColor3f(0.0, 1.0, 1.0); //シアン
+            glLineWidth(5);
+            glBegin(GL_LINE_STRIP);
+            glVertex3f(nowV->GetX(), nowV->GetY(), Depth);
+
+            if (nowV->GetNext() != NULL) {
+                glVertex3f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY(), Depth);
+            }
+            glEnd();
+        }
+
+        //側面の描画
+        for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+            glColor3f(0.0, 1.0, 1.0); //シアン
+            glLineWidth(5);
+            glBegin(GL_LINE_STRIP);
+            glVertex3f(nowV->GetX(), nowV->GetY(), 0.0);
+            glVertex3f(nowV->GetX(), nowV->GetY(), Depth);
+            glEnd();
+
         }
     }
 }
