@@ -180,14 +180,14 @@ public:
 	void Shape_Fill2();
 	//形状を立体にする関数
 	void SolidMake();
-	//奥行の値
-	float Depth = 0.1;
 	//奥行の値を更新する関数
 	void DepthUpdate(short zDelta);
 	//上面の形状を塗りつぶす関数
 	void Shape_Fill_Depth();
-	//時計回りで描画されたか判定する関数
+	//形状が時計回りで描画されたか判定する関数
 	bool Clockwise(CShape* nowS);
+	//3点が時計回りで描画されたか判定する関数
+	bool Clockwise(CVertex* v1, CVertex* v2,CVertex* v3);
 
 	//ワイヤーモデルボタンが押されているかどうかのフラグ
 	bool WireButtonFlag = false;

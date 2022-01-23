@@ -153,3 +153,15 @@ bool CShape::GetAnyVertexMoveNowFlag()
     return AnyVertexMoveNowFlag;
 }
 
+//Depth‚ğƒZƒbƒg‚·‚éŠÖ”
+void CShape::SetDepth(float d)
+{
+    Depth += d;
+}
+
+//Depth‚ğæ“¾‚·‚éŠÖ”
+float CShape::GetDepth()
+{
+    return Depth;
+}
+

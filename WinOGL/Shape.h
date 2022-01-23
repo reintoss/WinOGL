@@ -26,6 +26,9 @@ private:
 	//形状のある点が移動中かどうかのフラグ
 	bool AnyVertexMoveNowFlag = false;
 
+	//奥行の値
+	float Depth = 0.1;
+
 public:
 
 	//頂点のX・Y座標の両方を書き込む
@@ -63,5 +66,9 @@ public:
 	//AnyVertexMoveNowFlagをセット・取得する関数
 	void SetAnyVertexMoveNowFlag(bool f);
 	bool GetAnyVertexMoveNowFlag();
+
+	//Depthをセット・取得する関数
+	void SetDepth(float d);
+	float GetDepth();
 };
 
