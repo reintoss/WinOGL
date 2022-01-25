@@ -891,15 +891,12 @@ void CWinOGLView::OnViewMode()
 			AC.ViewModeButtonFlag = true;
 			AC.AxisFlag = true;
 			AC.ResetSelectVL();
-			AC.ResetSelectShapeFlag();
 		}
 		else {
-			//各数値を初期値に戻す
-			AC.InitViewValue();
 			AC.ViewModeButtonFlag = false;
+			AC.InitViewValue(); //各数値を初期値に戻す
 			AC.SolidButtonFlag = false;
 			AC.WireButtonFlag = false;
-			AC.ResetSelectShapeFlag();
 		}
 	}
 
@@ -927,13 +924,11 @@ void CWinOGLView::OnSolidMake()
 				AC.SolidButtonFlag = true;
 				AC.ViewModeButtonFlag = true;
 				AC.AxisFlag = true;
-				AC.ResetSelectShapeFlag();
 				AC.ShapeFillButtonFlag = true;
 				AC.WireButtonFlag = false;
 			}
 			else {
 				AC.SolidButtonFlag = false;
-				AC.ResetSelectShapeFlag();
 			}
 		}
 	}
@@ -961,13 +956,11 @@ void CWinOGLView::OnWireModel()
 				AC.WireButtonFlag = true;
 				AC.ViewModeButtonFlag = true;
 				AC.AxisFlag = true;
-				AC.ResetSelectShapeFlag();
 				AC.SolidButtonFlag = false;
 				AC.ShapeFillButtonFlag = false;
 			}
 			else {
 				AC.WireButtonFlag = false;
-				AC.ResetSelectShapeFlag();
 			}
 		}
 	}

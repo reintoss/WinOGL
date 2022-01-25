@@ -94,6 +94,7 @@ void CAdminControl::Draw() {
 
     //—§‘Ì•¨‚ð•`‰æ‚·‚é
     if (SolidButtonFlag == true) {
+
         //ƒ‰ƒCƒeƒBƒ“ƒO
         float dif[4] = { 1.0, 1.0, 1.0, 1.0 }; //•Ï”‚Ì’è‹`
         glLightfv(GL_LIGHT0, GL_DIFFUSE, dif); //ŠgŽU”½ŽËŒõ‚ÌÝ’è
@@ -108,6 +109,7 @@ void CAdminControl::Draw() {
         glDisable(GL_LIGHT0); //LIGHT0‚ð–³Œø
 
         DrawSelectSolidLine(); //‘I‘ð’†‚Ìƒ\ƒŠƒbƒhƒ‚ƒfƒ‹‚Ì•Ó‚ð•`‰æ‚·‚éŠÖ”
+
     }
     else if (WireButtonFlag == true) {
         WireMake();
@@ -1295,8 +1297,8 @@ void CAdminControl::RotateUpdate(float Rx, float Ry, float mx, float my)
         PreMouseY = Ry;
     }
     
-    RotateX += (my - PreMouseY) * 30.0 * (-1.0);
-    RotateY += (mx - PreMouseX) * 30.0;
+    RotateX += (my - PreMouseY) * 50.0 * (-1.0);
+    RotateY += (mx - PreMouseX) * 50.0;
 
     PreMouseX = mx;
     PreMouseY = my;
@@ -1362,7 +1364,7 @@ void CAdminControl::Shape_Fill2()
         nz = gaisekiZ / gaisekiSize;
 
         //}Œ`‚ª”½ŽžŒv‰ñ‚è‚Å•`‰æ‚³‚ê‚½ê‡¨–@ü‚ð‹tŒü‚«‚É
-        if (Clockwise(vp,vp2,vp3) == true) {
+        if (Clockwise(vp,vp2,vp3) == false) {
             nx *= -1;
             ny *= -1;
             nz *= -1;
@@ -1531,6 +1533,7 @@ void CAdminControl::SolidMake()
             glVertex3f(nowV->GetNext()->GetX(), nowV->GetNext()->GetY(), nowS->GetDepth());
             glVertex3f(nowV->GetX(), nowV->GetY(), nowS->GetDepth());
             glEnd();
+
         }
     }
 }
