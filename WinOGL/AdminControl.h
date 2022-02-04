@@ -61,9 +61,6 @@ public:
 	float Kakudo(CVertex* a, CVertex* b);
 	float Kakudo(float ax, float ay, float bx, float by);
 
-	//メモリ解放
-	void FreeMemory();
-
 private:
 	//形状リストのヘッド
 	CShape* shape_head = NULL;
@@ -200,8 +197,17 @@ public:
 	void ResetSelectShapeFlag();
 	//立体物を選択する関数
 	void SelectSolid();
-	//選択中のソリッドモデルの辺を描画する関数
+	//選択中の立体物の辺を描画する関数
 	void DrawSelectSolidLine();
+
+	//立体物の辺を選択する関数
+	void SelectSolidLine();
+	//選択中の立体物の側面の辺を描画する関数
+	void DrawSelectSolidSideLine();
+	//選択中の立体物の側面の辺を削除する関数
+	void DeleteSelectSolidSideLine();
+	//回転移動したかどうかのフラグ
+	bool RotateJudge = false;
 
 public:
 
@@ -282,7 +288,7 @@ public:
 
 	/* 点の挿入 */
 
-	//線にダブルクリックで点を挿入する関数
+	//線に右クリックで点を挿入する関数
 	void InsertVertex(float x, float y);
 	//選択されている線があるか判定する関数
 	bool SelectLineNowJudge();
@@ -290,11 +296,11 @@ public:
 
 	/* 点の削除 */
 
-	//左クリックで点を削除する関数
+	//右クリックで点を削除する関数
 	int DeleteVertex(float x, float y);
 	//図形の中に図形があるか(引数に削除する予定の点を与える)
 	bool GaihouJudge3(CShape* HoldS, CVertex* del);
-	//左クリックで形状を削除する関数
+	//右クリックで形状を削除する関数
 	void DeleteShape(float x, float y);
 
 

@@ -61,6 +61,7 @@ ON_UPDATE_COMMAND_UI(ID_SOLID_MAKE, &CWinOGLView::OnUpdateSolidMake)
 ON_COMMAND(ID_WIRE_MODEL, &CWinOGLView::OnWireModel)
 ON_UPDATE_COMMAND_UI(ID_WIRE_MODEL, &CWinOGLView::OnUpdateWireModel)
 ON_COMMAND(ID_SOLID_SELECT, &CWinOGLView::OnSolidSelect)
+ON_COMMAND(ID_SOLIDLINE_SELECT, &CWinOGLView::OnSolidlineSelect)
 END_MESSAGE_MAP()
 
 // CWinOGLView コンストラクション/デストラクション
@@ -303,6 +304,7 @@ void CWinOGLView::OnMouseMove(UINT nFlags, CPoint point)
 			}
 			else if (AC.RButtonDownFlag == true) {
 				AC.RotateUpdate(clickX_R, clickY_R, clickX_M, clickY_M);
+				AC.RotateJudge = true;
 			}
 		}
 		else if (AC.SelectButtonFlag == true) { //EDITモードの場合
@@ -480,6 +482,12 @@ void CWinOGLView::OnRButtonUp(UINT nFlags, CPoint point)
 		AC.RButtonDownFlag = false;
 		AC.PreMouseX = 0.0;
 		AC.PreMouseY = 0.0;
+		if (AC.RotateJudge == false) {
+			if (AC.SolidButtonFlag == true || AC.WireButtonFlag == true) {
+				AC.DeleteSelectSolidSideLine();
+			}
+		}
+		AC.RotateJudge = false;
 	}
 
 	RedrawWindow();
@@ -984,6 +992,16 @@ void CWinOGLView::OnSolidSelect()
 {
 	if (AC.SolidButtonFlag == true || AC.WireButtonFlag == true) { //立体物が描画されている場合
 		AC.SelectSolid();
+		AC.ResetSelectVL();
+	}
+
+	RedrawWindow();
+}
+
+void CWinOGLView::OnSolidlineSelect()
+{
+	if (AC.SolidButtonFlag == true || AC.WireButtonFlag == true) { //立体物が描画されている場合
+		AC.SelectSolidLine();
 	}
 
 	RedrawWindow();

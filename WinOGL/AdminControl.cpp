@@ -108,11 +108,13 @@ void CAdminControl::Draw() {
         glDisable(GL_LIGHTING); //ライティングを無効
         glDisable(GL_LIGHT0); //LIGHT0を無効
 
-        DrawSelectSolidLine(); //選択中のソリッドモデルの辺を描画する関数
+        DrawSelectSolidLine(); //選択中の立体物の辺を描画する関数
+        DrawSelectSolidSideLine(); //選択中の立体物の側面の辺を描画する関数
 
     }
     else if (WireButtonFlag == true) {
         WireMake();
+        DrawSelectSolidSideLine(); //選択中の立体物の側面の辺を描画する関数
     }
 
 
@@ -468,12 +470,6 @@ bool CAdminControl::BundanJudge(CVertex* a, CVertex* b, CVertex* c, CVertex* d)
     }
 
     return result;
-}
-
-void CAdminControl::FreeMemory()
-{
-    shape_head->FreeShape();
-    //shape_head = NULL;
 }
 
 void CAdminControl::CreateShape(float x, float y)
@@ -1363,12 +1359,21 @@ void CAdminControl::Shape_Fill2()
         ny = gaisekiY / gaisekiSize;
         nz = gaisekiZ / gaisekiSize;
 
-        //図形が反時計回りで描画された場合→法線を逆向きに
-        if (Clockwise(vp,vp2,vp3) == false) {
+        //図形がDepth>=0かつ反時計回りで描画された場合→法線を逆向きに
+        if (nowS->GetDepth() >= 0) {
+            if (Clockwise(vp, vp2, vp3) == false) {
+                nx *= -1;
+                ny *= -1;
+                nz *= -1;
+            }
+        }
+        //図形がDepth<0かつ時計回りで描画された場合→法線を逆向きに
+        else if (Clockwise(vp, vp2, vp3) == true) {
             nx *= -1;
             ny *= -1;
             nz *= -1;
         }
+
 
         if (nowS->GetAnyVertexMoveNowFlag() == false) {
 
@@ -1513,12 +1518,21 @@ void CAdminControl::SolidMake()
             ny = gaisekiY / gaisekiSize;
             nz = gaisekiZ / gaisekiSize;
 
-            //図形が時計回りで描画された場合→法線を逆向きに
-            if (Clockwise(nowS) == true) {
+            //図形がDepth>=0かつ時計回りで描画された場合→法線を逆向きに
+            if (nowS->GetDepth() >= 0) {
+                if (Clockwise(nowS) == true) {
+                    nx *= -1;
+                    ny *= -1;
+                    nz *= -1;
+                }
+            }
+            //図形がDepth<0かつ反時計回りで描画された場合→法線を逆向きに
+            else if (Clockwise(nowS) == false) {
                 nx *= -1;
                 ny *= -1;
                 nz *= -1;
             }
+            
 
             glBegin(GL_POLYGON);
             glNormal3f(nx, ny, nz); //法線の設定
@@ -1549,9 +1563,9 @@ void CAdminControl::DepthUpdate(short zDelta)
                 nowS->SetDepth(0.03);
             }
             else {
-                if (nowS->GetDepth() >= 0.03) {
+                //if (nowS->GetDepth() >= 0.03) {
                     nowS->SetDepth(-0.03);
-                }
+                //}
             }
             f = true;
             break;
@@ -1564,9 +1578,9 @@ void CAdminControl::DepthUpdate(short zDelta)
                 nowS->SetDepth(0.03);
             }
             else {
-                if (nowS->GetDepth() >= 0.03) {
+                //if (nowS->GetDepth() >= 0.03) {
                     nowS->SetDepth(-0.03);
-                }
+                //}
             }
         }
     }
@@ -1620,12 +1634,21 @@ void CAdminControl::Shape_Fill_Depth()
         ny = gaisekiY / gaisekiSize;
         nz = gaisekiZ / gaisekiSize;
 
-        //図形が時計回りで描画された場合→法線を逆向きに
-        if (Clockwise(vp, vp2, vp3) == true) {
+        //図形がDepth>=0かつ時計回りで描画された場合→法線を逆向きに
+        if (nowS->GetDepth() >= 0) {
+            if (Clockwise(vp, vp2, vp3) == true) {
+                nx *= -1;
+                ny *= -1;
+                nz *= -1;
+            }
+        }
+        //図形がDepth<0かつ反時計回りで描画された場合→法線を逆向きに
+        else if (Clockwise(vp, vp2, vp3) == false) {
             nx *= -1;
             ny *= -1;
             nz *= -1;
         }
+
         //三角形の場合は普通に塗りつぶす
         if (nowS->CountVertex() == 4) {
             glBegin(GL_TRIANGLES);
@@ -1872,6 +1895,7 @@ void CAdminControl::SelectSolid()
             nowS->SetSelectShapeFlag(false);
             if (nowS->GetNextS() != NULL) {
                 nowS->GetNextS()->SetSelectShapeFlag(true);
+                HoldS = nowS->GetNextS();
             }
             break;
         }
@@ -1879,10 +1903,11 @@ void CAdminControl::SelectSolid()
 
     if (f == false) {
         shape_head->GetNextS()->SetSelectShapeFlag(true);
+        HoldS = shape_head->GetNextS();
     }
 }
 
-//選択中のソリッドモデルの辺を描画する関数
+//選択中の立体物の辺を描画する関数
 void CAdminControl::DrawSelectSolidLine()
 {
 
@@ -1933,6 +1958,145 @@ void CAdminControl::DrawSelectSolidLine()
 
         }
     }
+}
+
+//立体物の辺を選択する関数
+void CAdminControl::SelectSolidLine()
+{
+    CShape* nowS = NULL;
+    bool f = false;
+
+    //選択中の形状の探索
+    for (CShape* nS = shape_head->GetNextS(); nS != NULL; nS = nS->GetNextS()) {
+        if (nS->GetSelectShapeFlag() == true) {
+            nowS = nS;
+        }
+    }
+
+    //選択中の形状がある場合
+    if (nowS != NULL) {
+        for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+            if (nowV->GetSelectVertexFlag() == true) {
+                f = true;
+                nowV->SetSelectVertexFlag(false);
+                if (nowV->GetNext()->GetNext() != NULL) {
+                    nowV->GetNext()->SetSelectVertexFlag(true);
+                }
+                break;
+            }
+        }
+
+        if (f == false) {
+            nowS->GetV()->SetSelectVertexFlag(true);
+        }
+    }
+}
+
+//選択中の立体物の側面の辺を描画する関数
+void CAdminControl::DrawSelectSolidSideLine()
+{
+    CShape* nowS = NULL;
+
+    //選択中の形状の探索
+    for (CShape* nS = shape_head->GetNextS(); nS != NULL; nS = nS->GetNextS()) {
+        if (nS->GetSelectShapeFlag() == true) {
+            nowS = nS;
+        }
+    }
+
+    if (nowS != NULL) {
+        //側面の辺の描画
+        for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+            if (nowV->GetSelectVertexFlag() == true) {
+                //線の描画
+                glColor3f(1.0, 0.0, 0.0); //赤
+                glLineWidth(8);
+                glBegin(GL_LINE_STRIP);
+                glVertex3f(nowV->GetX(), nowV->GetY(), 0.0);
+                glVertex3f(nowV->GetX(), nowV->GetY(), nowS->GetDepth());
+                glEnd();
+
+                //点の描画
+                glColor3f(1.0, 0.0, 0.0); //赤
+                glPointSize(POINTSIZE);
+                glBegin(GL_POINTS);
+                if (nowS->GetDepth() >= 0) {
+                    glVertex3f(nowV->GetX(), nowV->GetY(), -0.01);
+                    glVertex3f(nowV->GetX(), nowV->GetY(), nowS->GetDepth() + 0.01);
+                    glEnd();
+                }
+                else {
+                    glVertex3f(nowV->GetX(), nowV->GetY(), 0.01);
+                    glVertex3f(nowV->GetX(), nowV->GetY(), nowS->GetDepth() - 0.01);
+                    glEnd();
+                }
+
+                break;
+            }
+        }
+    }
+}
+
+//選択中の立体物の側面の辺を削除する関数
+void CAdminControl::DeleteSelectSolidSideLine()
+{
+    CShape* nowS = NULL;
+    CVertex* nowV = NULL;
+    CVertex* pre_vp = NULL;
+
+    //選択中の形状の探索
+    for (CShape* nS = shape_head->GetNextS(); nS != NULL; nS = nS->GetNextS()) {
+        if (nS->GetSelectShapeFlag() == true) {
+            nowS = nS;
+            break;
+        }
+    }
+
+    if (nowS != NULL) {
+        for (CVertex* nV = nowS->GetV(); nV->GetNext() != NULL; nV = nV->GetNext()) {
+            if (nV->GetSelectVertexFlag() == true) {
+                if (nowS->CountVertex() > 4) {
+                    nowV = nV;
+                    break;
+                }
+            }
+            pre_vp = nV;
+        }
+    }
+
+    if (nowV != NULL) {
+        CVertex* del = nowV;
+        CVertex* startV = nowS->GetV();
+        CVertex* endV = NULL;
+        CVertex* endVPre = NULL;
+
+        if (SameVertexJudge(del, nowS->GetV()) == true) { //始点を選んだ場合
+            //nowVを終点に変更
+            for (CVertex* nV = nowS->GetV()->GetNext(); nV != NULL; nV = nV->GetNext()) {
+                if (nV->GetNext() == NULL) {
+                    nowV = nV;
+                    break;
+                }
+                pre_vp = nV;
+            }
+            if (CrossJudge4(pre_vp, nowS->GetV()->GetNext()) == false) {
+                if (GaihouJudge3(nowS, del) == false) {
+                    nowS->SetV(nowS->GetV()->GetNext());
+                    nowV->SetXY(nowS->GetV()->GetX(), nowS->GetV()->GetY());
+                    delete startV;
+                }
+            }
+        }
+        else { //始点以外を選んだ場合
+            if (CrossJudge4(pre_vp, nowV->GetNext()) == false) {
+                if (GaihouJudge3(nowS, del) == false) {
+                    pre_vp->SetNext(del->GetNext());
+                    delete del;
+                }
+            }
+        }
+    }
+    
 }
 
 //選択した辺の色を変える関数（実際に色を変えるのはDraw()内）
@@ -2227,7 +2391,7 @@ bool CAdminControl::CrossJudge4(CVertex* s1, CVertex* g1)
             }
         }
         else { //自交差
-            for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+            for (CVertex* nowV = HoldS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
 
                 s2 = nowV;
                 g2 = nowV->GetNext();
@@ -2272,7 +2436,7 @@ void CAdminControl::VMoveCancel()
     }
 }
 
-//線にダブルクリックで点を挿入する関数
+//線に右クリックで点を挿入する関数
 void CAdminControl::InsertVertex(float x, float y)
 {
     CVertex* vp = new CVertex(x, y); //打った点
@@ -2308,8 +2472,8 @@ void CAdminControl::InsertVertex(float x, float y)
 
                 if (d1 <= (PI / 2) && d2 <= (PI / 2)) {
                     if (VtoL_Distance(vp1, vp2, vp) <= 0.03) {
-                        vp->SetNext(nowV->GetNext());
-                        nowV->SetNext(vp);
+                        vp->SetNext(vp2);
+                        vp1->SetNext(vp);
                         NotSelectFlagReset();
                         vp->SetSelectVertexFlag(true);
                     }
@@ -2332,7 +2496,7 @@ bool CAdminControl::SelectLineNowJudge()
     return false;
 }
 
-//左クリックで点を削除する関数
+//右クリックで点を削除する関数
 int CAdminControl::DeleteVertex(float x, float y)
 {
 
