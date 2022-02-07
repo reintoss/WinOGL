@@ -114,6 +114,7 @@ public:
 	afx_msg void OnSolidSelect();
 //	afx_msg void OnChamfer();
 	afx_msg void OnSolidlineSelect();
+	afx_msg void OnChamfer();
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン

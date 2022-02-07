@@ -199,15 +199,38 @@ public:
 	void SelectSolid();
 	//選択中の立体物の辺を描画する関数
 	void DrawSelectSolidLine();
+	//選択中の立体物を保持する変数
+	CShape* SelectSolidNow = NULL;
 
 	//立体物の辺を選択する関数
 	void SelectSolidLine();
 	//選択中の立体物の側面の辺を描画する関数
 	void DrawSelectSolidSideLine();
 	//選択中の立体物の側面の辺を削除する関数
-	void DeleteSelectSolidSideLine();
+	int DeleteSelectSolidSideLine();
 	//回転移動したかどうかのフラグ
 	bool RotateJudge = false;
+
+	//面取り量
+	float ChamferAmount = 0.03;
+	//面取りする点が鋭角過ぎないか判定する関数
+	bool ChamferAngleJudge();
+	//面取りする点の近くに隣接する点がないか判定する関数
+	bool ChamferDistanceJudge();
+	//面取りの座標を計算する関数1
+	int Chamfer1();
+	//面取りの座標を計算する関数2
+	int Chamfer2();
+	//面取りの点の情報
+	float cx1 = 0.0;
+	float cx2 = 0.0;
+	float cy1 = 0.0;
+	float cy2 = 0.0;
+	CVertex* cvp = NULL;
+	//面取りによって交差しないか判定する関数
+	bool ChamferCrossJudge();
+	//面取りの点を挿入する関数
+	void InsertChamferVertex(CVertex* pre, CVertex* lastV, bool f);
 
 public:
 

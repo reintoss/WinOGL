@@ -1340,6 +1340,29 @@ void CAdminControl::Shape_Fill2()
         vp = nowS->GetV();
         vp2 = vp->GetNext();
         vp3 = vp2->GetNext();
+
+        //形状の最初の3点のx座標またはy座標が同じの場合→vp3を変更
+        if (vp->GetX() - vp2->GetX() == 0) {
+            if (vp->GetX() - vp3->GetX() == 0) {
+                for (CVertex* nowV = vp2->GetNext()->GetNext(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+                    if (nowV->GetX() - vp2->GetX() != 0) {
+                        vp3 = nowV;
+                        break;
+                    }
+                }
+            }
+        }
+        else if (vp->GetY() - vp2->GetY() == 0) {
+            if (vp->GetY() - vp3->GetY() == 0) {
+                for (CVertex* nowV = vp2->GetNext()->GetNext(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+                    if (nowV->GetY() - vp2->GetY() != 0) {
+                        vp3 = nowV;
+                        break;
+                    }
+                }
+            }
+        }
+
         ax = VectorX(vp, vp2);
         ay = VectorY(vp, vp2);
         az = 0;
@@ -1615,6 +1638,29 @@ void CAdminControl::Shape_Fill_Depth()
         vp = nowS->GetV();
         vp2 = vp->GetNext();
         vp3 = vp2->GetNext();
+
+        //形状の最初の3点のx座標またはy座標が同じの場合→vp3を変更
+        if (vp->GetX() - vp2->GetX() == 0) {
+            if (vp->GetX() - vp3->GetX() == 0) {
+                for (CVertex* nowV = vp2->GetNext()->GetNext(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+                    if (nowV->GetX() - vp2->GetX() != 0) {
+                        vp3 = nowV;
+                        break;
+                    }
+                }
+            }
+        }
+        else if (vp->GetY() - vp2->GetY() == 0) {
+            if (vp->GetY() - vp3->GetY() == 0) {
+                for (CVertex* nowV = vp2->GetNext()->GetNext(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+                    if (nowV->GetY() - vp2->GetY() != 0) {
+                        vp3 = nowV;
+                        break;
+                    }
+                }
+            }
+        }
+
         ax = VectorX(vp, vp2);
         ay = VectorY(vp, vp2);
         az = 0;
@@ -1893,6 +1939,7 @@ void CAdminControl::SelectSolid()
         if (nowS->GetSelectShapeFlag() == true) {
             f = true;
             nowS->SetSelectShapeFlag(false);
+            HoldS = NULL;
             if (nowS->GetNextS() != NULL) {
                 nowS->GetNextS()->SetSelectShapeFlag(true);
                 HoldS = nowS->GetNextS();
@@ -2038,7 +2085,7 @@ void CAdminControl::DrawSelectSolidSideLine()
 }
 
 //選択中の立体物の側面の辺を削除する関数
-void CAdminControl::DeleteSelectSolidSideLine()
+int CAdminControl::DeleteSelectSolidSideLine()
 {
     CShape* nowS = NULL;
     CVertex* nowV = NULL;
@@ -2081,22 +2128,323 @@ void CAdminControl::DeleteSelectSolidSideLine()
             }
             if (CrossJudge4(pre_vp, nowS->GetV()->GetNext()) == false) {
                 if (GaihouJudge3(nowS, del) == false) {
+                    startV->GetNext()->SetSelectVertexFlag(true);
                     nowS->SetV(nowS->GetV()->GetNext());
                     nowV->SetXY(nowS->GetV()->GetX(), nowS->GetV()->GetY());
                     delete startV;
+                    return 1;
                 }
             }
         }
         else { //始点以外を選んだ場合
             if (CrossJudge4(pre_vp, nowV->GetNext()) == false) {
                 if (GaihouJudge3(nowS, del) == false) {
+                    del->GetNext()->SetSelectVertexFlag(true);
                     pre_vp->SetNext(del->GetNext());
                     delete del;
+                    return 1;
                 }
             }
         }
     }
-    
+    return 0;
+}
+
+bool CAdminControl::ChamferAngleJudge()
+{
+    CVertex* vpPre = NULL;
+    CVertex* vpNext = NULL;
+    float d = 0.0;
+
+    //選択中の点の探索
+    for (CVertex* nV = HoldS->GetV(); nV->GetNext() != NULL; nV = nV->GetNext()) {
+        if (nV->GetSelectVertexFlag() == true) {
+            cvp = nV;
+            vpNext = cvp->GetNext();
+            break;
+        }
+        vpPre = nV;
+    }
+
+    if (cvp == NULL) {
+        return true;
+    }
+    else {
+        if (vpPre == NULL) { //vpが始点の場合→vpPreを終点の手前の点に
+            for (CVertex* nV = HoldS->GetV()->GetNext(); nV != NULL; nV = nV->GetNext()) {
+                if (nV->GetNext()->GetNext() == NULL) {
+                    vpPre = nV;
+                    break;
+                }
+            }
+        }
+    }
+
+    //角度の計算
+    d = Kakudo(VectorX(cvp, vpPre), VectorY(cvp, vpPre), VectorX(cvp, vpNext), VectorY(cvp, vpNext));
+
+    if (d < 0) {
+        d *= -1;
+    }
+
+    if (d < 0.174) { //角度が約10°以下の場合
+        return true;
+    }
+    else if (d - PI < 0.01 && d - PI > -0.01) { //角度が約180°の場合
+        return true;
+    }
+
+    return false;
+}
+
+//面取りする点の近くに隣接する点がないか判定する関数
+bool CAdminControl::ChamferDistanceJudge()
+{
+    CVertex* vpPre = NULL;
+    CVertex* vpNext = NULL;
+    float d1 = 0.0, d2 = 0.0;
+
+    //選択中の点の探索
+    for (CVertex* nV = HoldS->GetV(); nV->GetNext() != NULL; nV = nV->GetNext()) {
+        if (nV->GetSelectVertexFlag() == true) {
+            cvp = nV;
+            vpNext = cvp->GetNext();
+            break;
+        }
+        vpPre = nV;
+    }
+
+    //vpが始点の場合→vpPreを終点の手前の点に
+    if (vpPre == NULL) {
+        for (CVertex* nV = HoldS->GetV()->GetNext(); nV != NULL; nV = nV->GetNext()) {
+            if (nV->GetNext()->GetNext() == NULL) {
+                vpPre = nV;
+                break;
+            }
+        }
+    }
+
+    //距離の計算
+    d1 = Distance(vpPre, cvp->GetX(), cvp->GetY());
+    d2 = Distance(vpNext, cvp->GetX(), cvp->GetY());
+
+    if (d1 <= (ChamferAmount + 0.02) || d2 <= (ChamferAmount + 0.02)) {
+        return true;
+    }
+    else {
+        return false;
+    }
+
+}
+
+//面取りの座標を計算する関数1
+int CAdminControl::Chamfer1()
+{
+    CVertex* lastV = NULL;
+    CVertex* lastVPre = NULL;
+    CVertex* pre = NULL;
+    CVertex* nowV = NULL;
+    float d1;
+    bool v = false, f = false;
+
+    //選択中の辺の探索
+    for (CVertex* nV = HoldS->GetV(); nV->GetNext() != NULL; nV = nV->GetNext()) {
+        if (nV->GetSelectVertexFlag() == true) {
+                nowV = nV;
+                break;
+        }
+        pre = nV;
+    }
+
+    if (nowV != NULL) {
+        if (SameVertexJudge(nowV, HoldS->GetV()) == false) { //始点以外を選んだ場合
+            cvp = nowV;
+        }
+        else { //始点を選んだ場合→nowVを終点に変更
+            for (CVertex* nV = HoldS->GetV()->GetNext(); nV != NULL; nV = nV->GetNext()) {
+                if (nV->GetNext() == NULL) {
+                    nowV = nV;
+                    break;
+                }
+                pre = nV;
+            }
+            lastV = nowV;
+            lastVPre = pre;
+            cvp = HoldS->GetV();
+            v = true;
+        }
+    }
+    else {
+        return 0;
+    }
+
+    if (cvp != NULL) {
+
+        d1 = Kakudo(0.1, 0.0, VectorX(cvp, cvp->GetNext()), VectorY(cvp, cvp->GetNext()));
+        if (d1 > (PI / 2)) {
+            d1 = PI - d1;
+            f = true;
+        }
+        cx1 = ChamferAmount * cos(d1);
+        cy1 = ChamferAmount * sin(d1);
+        if (f == false) {
+            cx1 = cvp->GetX() + cx1;
+            cy1 = cvp->GetY() + cy1;
+        }
+        else {
+            cx1 = cvp->GetX() - cx1;
+            cy1 = cvp->GetY() + cy1;
+        }
+    }
+
+    return 1;
+}
+
+//面取りの座標を計算する関数2
+int CAdminControl::Chamfer2()
+{
+    CVertex* lastV = NULL;
+    CVertex* lastVPre = NULL;
+    CVertex* pre = NULL;
+    CVertex* nowV = NULL;
+    float d2;
+    bool v = false, f = false;
+
+    //選択中の辺の探索
+    for (CVertex* nV = HoldS->GetV(); nV->GetNext() != NULL; nV = nV->GetNext()) {
+        if (nV->GetSelectVertexFlag() == true) {
+            nowV = nV;
+            break;
+        }
+        pre = nV;
+    }
+
+    if (SameVertexJudge(nowV, HoldS->GetV()) == false) { //始点以外を選んだ場合
+        cvp = nowV;
+    }
+    else { //始点を選んだ場合→nowVを終点に変更
+        for (CVertex* nV = HoldS->GetV()->GetNext(); nV != NULL; nV = nV->GetNext()) {
+            if (nV->GetNext() == NULL) {
+                nowV = nV;
+                break;
+            }
+            pre = nV;
+        }
+        lastV = nowV;
+        lastVPre = pre;
+        cvp = HoldS->GetV();
+        v = true;
+    }
+
+    if (cvp != NULL) {
+        if (v == false) {
+            d2 = Kakudo(-0.1, 0.0, VectorX(cvp, pre), VectorY(cvp, pre));
+        }
+        else {
+            d2 = Kakudo(-0.1, 0.0, VectorX(cvp, lastVPre), VectorY(cvp, lastVPre));
+        }
+
+        if (d2 > (PI / 2)) {
+            d2 = PI - d2;
+            f = true;
+        }
+        cx2 = ChamferAmount * cos(d2);
+        cy2 = ChamferAmount * sin(d2);
+        if (f == false) {
+            cx2 = cvp->GetX() - cx2;
+            cy2 = cvp->GetY() - cy2;
+        }
+        else {
+            cx2 = cvp->GetX() + cx2;
+            cy2 = cvp->GetY() - cy2;
+        }
+
+        if (ChamferCrossJudge() == false) {
+            InsertChamferVertex(pre, lastV, v);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+//面取りによって交差しないか判定する関数
+bool CAdminControl::ChamferCrossJudge()
+{
+    CVertex* v1 = cvp;
+    CVertex* v2 = new CVertex(cx1, cy1); //打った点1
+    CVertex* v3 = new CVertex(cx2, cy2); //打った点2
+
+    float sum = 0.0;
+    float kakudo1 = 0.0;
+    float kakudo2 = 0.0;
+    float kakudo3 = 0.0;
+
+    //三角形の中に自分の形状の点がないか
+    for (CVertex* nowV = HoldS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+        sum = 0.0;
+        if (SameVertexJudge(nowV, v1) == false && SameVertexJudge(nowV, v2) == false && SameVertexJudge(nowV, v3) == false) {
+            kakudo1 = Kakudo(VectorX(nowV, v1), VectorY(nowV, v1), VectorX(nowV, v2), VectorY(nowV, v2));
+            kakudo2 = Kakudo(VectorX(nowV, v2), VectorY(nowV, v2), VectorX(nowV, v3), VectorY(nowV, v3));
+            kakudo3 = Kakudo(VectorX(nowV, v3), VectorY(nowV, v3), VectorX(nowV, v1), VectorY(nowV, v1));
+            sum = kakudo1 + kakudo2 + kakudo3;
+
+            //内包している場合
+            if (sum >= 0.001 || sum <= -0.001) {
+                delete v2;
+                delete v3;
+                return true;
+            }
+        }
+    }
+
+    //三角形の中に他の形状の点がないか
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        if (nowS != HoldS) {
+            for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
+                sum = 0.0;
+                kakudo1 = Kakudo(VectorX(nowV, v1), VectorY(nowV, v1), VectorX(nowV, v2), VectorY(nowV, v2));
+                kakudo2 = Kakudo(VectorX(nowV, v2), VectorY(nowV, v2), VectorX(nowV, v3), VectorY(nowV, v3));
+                kakudo3 = Kakudo(VectorX(nowV, v3), VectorY(nowV, v3), VectorX(nowV, v1), VectorY(nowV, v1));
+                sum = kakudo1 + kakudo2 + kakudo3;
+
+                //内包している場合
+                if (sum >= 0.001 || sum <= -0.001) {
+                    delete v2;
+                    delete v3;
+                    return true;
+                }
+            }
+        }
+    }
+
+    delete v2;
+    delete v3;
+    return false;
+}
+
+//面取りの点を挿入する関数
+void CAdminControl::InsertChamferVertex(CVertex* pre, CVertex* lastV, bool f)
+{
+    CVertex* newV1 = new CVertex(cx1, cy1); //打った点1
+    newV1->SetNext(cvp->GetNext());
+    cvp->SetNext(newV1);
+
+    if (f == false) {
+        CVertex* newV2 = new CVertex(cx2, cy2); //打った点2
+        newV2->SetNext(cvp);
+        pre->SetNext(newV2);
+    }
+    else {
+        CVertex* newV2 = new CVertex(cx2, cy2); //打った点2
+        newV2->SetNext(lastV);
+        pre->SetNext(newV2);
+    }
+
+    cx1 = 0.0;
+    cx2 = 0.0;
+    cy1 = 0.0;
+    cy2 = 0.0;
+    cvp = NULL;
 }
 
 //選択した辺の色を変える関数（実際に色を変えるのはDraw()内）
@@ -2269,8 +2617,10 @@ void CAdminControl::ResetAlreadySelectVertexFlag()
 //AnyVertexMoveNowFlagをリセットする関数
 void CAdminControl::ResetAnyVertexMoveNowFlag()
 {
-    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
-        nowS->SetAnyVertexMoveNowFlag(false);
+    if (shape_head != NULL) {
+        for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+            nowS->SetAnyVertexMoveNowFlag(false);
+        }
     }
 }
 

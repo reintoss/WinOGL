@@ -62,6 +62,7 @@ ON_COMMAND(ID_WIRE_MODEL, &CWinOGLView::OnWireModel)
 ON_UPDATE_COMMAND_UI(ID_WIRE_MODEL, &CWinOGLView::OnUpdateWireModel)
 ON_COMMAND(ID_SOLID_SELECT, &CWinOGLView::OnSolidSelect)
 ON_COMMAND(ID_SOLIDLINE_SELECT, &CWinOGLView::OnSolidlineSelect)
+ON_COMMAND(ID_CHAMFER, &CWinOGLView::OnChamfer)
 END_MESSAGE_MAP()
 
 // CWinOGLView コンストラクション/デストラクション
@@ -349,14 +350,13 @@ void CWinOGLView::OnLButtonDblClk(UINT nFlags, CPoint point)
 						AC.DeleteCopyShape(); //コピーした形状を削除
 					}
 				}
+				AC.ResetHoldS();
 			}
 		}
 
 	}
 
 	RedrawWindow();
-
-	AC.ResetHoldS();
 
 	CView::OnLButtonDblClk(nFlags, point);
 }
@@ -1005,4 +1005,25 @@ void CWinOGLView::OnSolidlineSelect()
 	}
 
 	RedrawWindow();
+}
+
+
+void CWinOGLView::OnChamfer()
+{
+	if (AC.SolidButtonFlag == true || AC.WireButtonFlag == true) { //立体物が描画されている場合
+		if (AC.HoldS != NULL) {
+			if (AC.ChamferAngleJudge() == false) {
+				if (AC.ChamferDistanceJudge() == false) {
+					if (AC.Chamfer1() == 1) {
+						if (AC.Chamfer2() == 1) {
+							AC.DeleteSelectSolidSideLine();
+						}
+					}
+				}
+			}
+		}
+		RedrawWindow();
+
+	}
+
 }
