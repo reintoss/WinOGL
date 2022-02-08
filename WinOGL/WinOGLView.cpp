@@ -905,6 +905,9 @@ void CWinOGLView::OnViewMode()
 			AC.InitViewValue(); //各数値を初期値に戻す
 			AC.SolidButtonFlag = false;
 			AC.WireButtonFlag = false;
+			if (AC.DrawButtonFlag == true) {
+				AC.NotSelectFlagReset();
+			}
 		}
 	}
 

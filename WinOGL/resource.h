@@ -42,13 +42,21 @@
 #define ID_32826                        32826
 #define ID_WIRE_MODEL                   32827
 #define ID_SOLID_SELECT                 32830
+#define ID_32831                        32831
+#define ID_CHAMFER                      32832
+#define ID_32835                        32835
+#define ID_BUTTON32837                  32837
+#define ID_BUTTON32838                  32838
+#define ID_SOLIDLINE_SELECT             32839
+#define ID_BUTTON32840                  32840
+#define ID_BUTTON32841                  32841
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        310
-#define _APS_NEXT_COMMAND_VALUE         32831
+#define _APS_NEXT_COMMAND_VALUE         32842
 #define _APS_NEXT_CONTROL_VALUE         1000
 #define _APS_NEXT_SYMED_VALUE           310
 #endif
