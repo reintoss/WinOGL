@@ -232,6 +232,12 @@ public:
 	//面取りの点を挿入する関数
 	void InsertChamferVertex(CVertex* pre, CVertex* lastV, bool f);
 
+	//立体物を拡大縮小中かのフラグ
+	bool SolidExepansionFlag = false;
+	//立体物を回転中かのフラグ
+	bool SolidRotateFlag = false;
+
+
 public:
 
 	/* 点の選択 */

@@ -1838,6 +1838,11 @@ void CAdminControl::WireMake()
             //点の描画
             if (nowS->GetSelectShapeFlag() == false) {
                 glColor3f(1.0, 1.0, 1.0); //白
+            }else if (SolidExepansionFlag == true) {
+                glColor3f(0.0, 1.0, 0.0); //緑
+            }
+            else if (SolidRotateFlag == true) {
+                glColor3f(1.0, 1.0, 0.0); //黄
             }
             else {
                 glColor3f(0.0, 1.0, 1.0); //シアン
@@ -1850,6 +1855,12 @@ void CAdminControl::WireMake()
             //線の描画
             if (nowS->GetSelectShapeFlag() == false) {
                 glColor3f(1.0, 1.0, 1.0); //白
+            }
+            else if (SolidExepansionFlag == true) {
+                glColor3f(0.0, 1.0, 0.0); //緑
+            }
+            else if (SolidRotateFlag == true) {
+                glColor3f(1.0, 1.0, 0.0); //黄
             }
             else {
                 glColor3f(0.0, 1.0, 1.0); //シアン
@@ -1874,6 +1885,12 @@ void CAdminControl::WireMake()
             if (nowS->GetSelectShapeFlag() == false) {
                 glColor3f(1.0, 1.0, 1.0); //白
             }
+            else if (SolidExepansionFlag == true) {
+                glColor3f(0.0, 1.0, 0.0); //緑
+            }
+            else if (SolidRotateFlag == true) {
+                glColor3f(1.0, 1.0, 0.0); //黄
+            }
             else {
                 glColor3f(0.0, 1.0, 1.0); //シアン
             }
@@ -1885,6 +1902,12 @@ void CAdminControl::WireMake()
             //線の描画
             if (nowS->GetSelectShapeFlag() == false) {
                 glColor3f(1.0, 1.0, 1.0); //白
+            }
+            else if (SolidExepansionFlag == true) {
+                glColor3f(0.0, 1.0, 0.0); //緑
+            }
+            else if (SolidRotateFlag == true) {
+                glColor3f(1.0, 1.0, 0.0); //黄
             }
             else {
                 glColor3f(0.0, 1.0, 1.0); //シアン
@@ -1907,6 +1930,11 @@ void CAdminControl::WireMake()
             //線の描画
             if (nowS->GetSelectShapeFlag() == false) {
                 glColor3f(1.0, 1.0, 1.0); //白
+            }else if (SolidExepansionFlag == true) {
+                glColor3f(0.0, 1.0, 0.0); //緑
+            }
+            else if (SolidRotateFlag == true) {
+                glColor3f(1.0, 1.0, 0.0); //黄
             }
             else {
                 glColor3f(0.0, 1.0, 1.0); //シアン
@@ -1970,7 +1998,15 @@ void CAdminControl::DrawSelectSolidLine()
 
         //底面の描画
         for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
-            glColor3f(0.0, 1.0, 1.0); //シアン
+            if (SolidExepansionFlag == true) {
+                glColor3f(0.0, 1.0, 0.0); //緑
+            }
+            else if (SolidRotateFlag == true) {
+                glColor3f(1.0, 1.0, 0.0); //黄
+            }
+            else {
+                glColor3f(0.0, 1.0, 1.0); //シアン
+            }
             glLineWidth(5);
             glBegin(GL_LINE_STRIP);
             glVertex2f(nowV->GetX(), nowV->GetY());
@@ -1983,7 +2019,15 @@ void CAdminControl::DrawSelectSolidLine()
 
         //上面の描画
         for (CVertex* nowV = nowS->GetV(); nowV != NULL; nowV = nowV->GetNext()) {
-            glColor3f(0.0, 1.0, 1.0); //シアン
+            if (SolidExepansionFlag == true) {
+                glColor3f(0.0, 1.0, 0.0); //緑
+            }
+            else if (SolidRotateFlag == true) {
+                glColor3f(1.0, 1.0, 0.0); //黄
+            }
+            else {
+                glColor3f(0.0, 1.0, 1.0); //シアン
+            }
             glLineWidth(5);
             glBegin(GL_LINE_STRIP);
             glVertex3f(nowV->GetX(), nowV->GetY(), nowS->GetDepth());
@@ -1996,7 +2040,15 @@ void CAdminControl::DrawSelectSolidLine()
 
         //側面の描画
         for (CVertex* nowV = nowS->GetV(); nowV->GetNext() != NULL; nowV = nowV->GetNext()) {
-            glColor3f(0.0, 1.0, 1.0); //シアン
+            if (SolidExepansionFlag == true) {
+                glColor3f(0.0, 1.0, 0.0); //緑
+            }
+            else if (SolidRotateFlag == true) {
+                glColor3f(1.0, 1.0, 0.0); //黄
+            }
+            else {
+                glColor3f(0.0, 1.0, 1.0); //シアン
+            }
             glLineWidth(5);
             glBegin(GL_LINE_STRIP);
             glVertex3f(nowV->GetX(), nowV->GetY(), 0.0);
@@ -3154,16 +3206,18 @@ void CAdminControl::CenterBase()
             BaseX = CenterX / c;
             BaseY = CenterY / c;
 
-            glPointSize(20);
-            glBegin(GL_POINTS);
-            glVertex2f(BaseX, BaseY);
-            glEnd();
+            if (SolidExepansionFlag == false || SolidRotateFlag == false) {
+                glPointSize(20);
+                glBegin(GL_POINTS);
+                glVertex2f(BaseX, BaseY);
+                glEnd();
 
-            glColor3f(0, 0, 0); //黒
-            glPointSize(10);
-            glBegin(GL_POINTS);
-            glVertex2f(BaseX, BaseY);
-            glEnd();
+                glColor3f(0, 0, 0); //黒
+                glPointSize(10);
+                glBegin(GL_POINTS);
+                glVertex2f(BaseX, BaseY);
+                glEnd();
+            }
         }
     }
 }

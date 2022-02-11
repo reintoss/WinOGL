@@ -112,7 +112,6 @@ public:
 	afx_msg void OnWireModel();
 	afx_msg void OnUpdateWireModel(CCmdUI* pCmdUI);
 	afx_msg void OnSolidSelect();
-//	afx_msg void OnChamfer();
 	afx_msg void OnSolidlineSelect();
 	afx_msg void OnChamfer();
 };

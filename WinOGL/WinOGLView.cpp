@@ -365,9 +365,10 @@ void CWinOGLView::OnLButtonDblClk(UINT nFlags, CPoint point)
 void CWinOGLView::OnMButtonDown(UINT nFlags, CPoint point)
 {
 
+	CRect rect;
+	GetClientRect(rect); // 描画領域の大きさを取得
+
 	if (AC.ViewModeButtonFlag == false) { //視点変更モードではない場合
-		CRect rect;
-		GetClientRect(rect); // 描画領域の大きさを取得
 
 		BaseX = (float)point.x / rect.Width(); //ex.1920を1とする
 		BaseX = BaseX * 2 - 1; //区間[0,1]を[-1,0,1]にする
@@ -418,7 +419,35 @@ void CWinOGLView::OnMButtonDown(UINT nFlags, CPoint point)
 				AC.Reset_shape_head2();
 			}
 		}
+
 	}
+	else {
+		//立体物の拡大縮小
+		if (AC.SolidButtonFlag == true || AC.WireButtonFlag == true) {
+			if (AC.HoldS != NULL) {
+				if (AC.SolidExepansionFlag == false && AC.SolidRotateFlag == false) {
+					AC.CenterBase(); //基点を重心に
+					AC.SolidExepansionFlag = true;
+					AC.SetRButtonFlag(false);
+					AC.SetWheelUsedFlag(false);
+				}
+				else {
+					AC.SolidExepansionFlag = false;
+					AC.SolidRotateFlag = false;
+					if (AC.shape_head2_NULLJudge() == false) { //shape_head2がNULLでなければ交差判定
+						if (AC.ShapeMoveCrossJudge() == true) {
+							AC.ShapeMoveCancel();
+						}
+						else if (AC.ExpansionJudge(rect) == true) { //拡大縮小しすぎの場合
+							AC.ShapeMoveCancel();
+						}
+					}
+					AC.Reset_shape_head2();
+				}
+			}
+		}
+	}
+	
 
 	RedrawWindow();
 
@@ -446,6 +475,10 @@ void CWinOGLView::OnRButtonDown(UINT nFlags, CPoint point)
 
 	if (AC.ViewModeButtonFlag == true) { //視点変更モードの場合
 		AC.RButtonDownFlag = true;
+		if (AC.SolidExepansionFlag == true && AC.GetWheelUsedFlag() == false) {
+			AC.SolidRotateFlag = true;
+			AC.SolidExepansionFlag = false;
+		}
 	}
 	else if (AC.SelectButtonFlag == true) { //編集ボタンが押されている場合
 		if (AC.GetRButtonFlag() == false) { //回転基点の追加
@@ -513,7 +546,16 @@ BOOL CWinOGLView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 			AC.DepthUpdate(zDelta); //奥行の値を更新
 		}
 		else {
-			AC.ScaleUpdate(zDelta); //視点の拡大・縮小
+			if (AC.SolidExepansionFlag == false && AC.SolidRotateFlag == false) {
+				AC.ScaleUpdate(zDelta); //視点の拡大・縮小
+			}
+			else if(AC.SolidExepansionFlag == true){
+				AC.DrawExpansionShape(zDelta); //立体物の拡大・縮小
+				AC.SetWheelUsedFlag(true);
+			}
+			else if (AC.SolidRotateFlag == true) {
+				AC.DrawRotateShape(zDelta); //立体物の回転
+			}
 		}
 	}
 
@@ -899,14 +941,17 @@ void CWinOGLView::OnViewMode()
 			AC.ViewModeButtonFlag = true;
 			AC.AxisFlag = true;
 			AC.ResetSelectVL();
+			AC.NotSelectFlagReset();
 		}
 		else {
-			AC.ViewModeButtonFlag = false;
-			AC.InitViewValue(); //各数値を初期値に戻す
-			AC.SolidButtonFlag = false;
-			AC.WireButtonFlag = false;
-			if (AC.DrawButtonFlag == true) {
-				AC.NotSelectFlagReset();
+			if (AC.SolidExepansionFlag == false && AC.SolidRotateFlag == false) {
+				AC.ViewModeButtonFlag = false;
+				AC.InitViewValue(); //各数値を初期値に戻す
+				AC.SolidButtonFlag = false;
+				AC.WireButtonFlag = false;
+				if (AC.DrawButtonFlag == true) {
+					AC.NotSelectFlagReset();
+				}
 			}
 		}
 	}
@@ -937,6 +982,7 @@ void CWinOGLView::OnSolidMake()
 				AC.AxisFlag = true;
 				AC.ShapeFillButtonFlag = true;
 				AC.WireButtonFlag = false;
+				AC.NotSelectFlagReset();
 			}
 			else {
 				AC.SolidButtonFlag = false;
@@ -969,6 +1015,7 @@ void CWinOGLView::OnWireModel()
 				AC.AxisFlag = true;
 				AC.SolidButtonFlag = false;
 				AC.ShapeFillButtonFlag = false;
+				AC.NotSelectFlagReset();
 			}
 			else {
 				AC.WireButtonFlag = false;
@@ -994,8 +1041,10 @@ void CWinOGLView::OnUpdateWireModel(CCmdUI* pCmdUI)
 void CWinOGLView::OnSolidSelect()
 {
 	if (AC.SolidButtonFlag == true || AC.WireButtonFlag == true) { //立体物が描画されている場合
-		AC.SelectSolid();
-		AC.ResetSelectVL();
+		if (AC.SolidExepansionFlag == false && AC.SolidRotateFlag == false) {
+			AC.SelectSolid();
+			AC.ResetSelectVL();
+		}
 	}
 
 	RedrawWindow();
@@ -1004,7 +1053,9 @@ void CWinOGLView::OnSolidSelect()
 void CWinOGLView::OnSolidlineSelect()
 {
 	if (AC.SolidButtonFlag == true || AC.WireButtonFlag == true) { //立体物が描画されている場合
-		AC.SelectSolidLine();
+		if (AC.SolidExepansionFlag == false && AC.SolidRotateFlag == false) {
+			AC.SelectSolidLine();
+		}
 	}
 
 	RedrawWindow();
@@ -1015,11 +1066,13 @@ void CWinOGLView::OnChamfer()
 {
 	if (AC.SolidButtonFlag == true || AC.WireButtonFlag == true) { //立体物が描画されている場合
 		if (AC.HoldS != NULL) {
-			if (AC.ChamferAngleJudge() == false) {
-				if (AC.ChamferDistanceJudge() == false) {
-					if (AC.Chamfer1() == 1) {
-						if (AC.Chamfer2() == 1) {
-							AC.DeleteSelectSolidSideLine();
+			if (AC.SolidExepansionFlag == false && AC.SolidRotateFlag == false) {
+				if (AC.ChamferAngleJudge() == false) {
+					if (AC.ChamferDistanceJudge() == false) {
+						if (AC.Chamfer1() == 1) {
+							if (AC.Chamfer2() == 1) {
+								AC.DeleteSelectSolidSideLine();
+							}
 						}
 					}
 				}
