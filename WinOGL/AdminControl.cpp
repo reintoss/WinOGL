@@ -472,9 +472,10 @@ bool CAdminControl::BundanJudge(CVertex* a, CVertex* b, CVertex* c, CVertex* d)
     return result;
 }
 
-void CAdminControl::CreateShape(float x, float y)
+bool CAdminControl::CreateShape(float x, float y)
 {
 
+    int c = 0;
 
     //形状が何もないとき
     if (shape_head == NULL) {
@@ -487,6 +488,7 @@ void CAdminControl::CreateShape(float x, float y)
         //3点打つまでは追加
         if (shape_head->CountVertex() < 3) {
             shape_head->AddVertex(x, y);
+            c++;
             ShapeCloseFlag = false;
         }
         //4点目以降の時閉じるか判定
@@ -496,10 +498,12 @@ void CAdminControl::CreateShape(float x, float y)
                 //↑してる場合自交差してなければ閉じずに打つ
                 if (CrossJudge(shape_head, shape_head->GetV(), x, y) == false) {
                     shape_head->AddVertex(x, y);
+                    c++;
                 }
             }//自交差(始点つなげたときの)してなければ閉じる
             else {
                 shape_head->AddVertex(shape_head->GetV()->GetX(), shape_head->GetV()->GetY());
+                c++;
                 AddShape();
                 ShapeCloseFlag = true;
             }
@@ -509,6 +513,7 @@ void CAdminControl::CreateShape(float x, float y)
         }//閉じてなくて交差してなければそのまま追加
         else {
             shape_head->AddVertex(x, y);
+            c++;
         }
     }
     //図形が2つ目以降の時
@@ -518,6 +523,7 @@ void CAdminControl::CreateShape(float x, float y)
     //1点目は
     else if (shape_head->CountVertex() < 1) {
         shape_head->AddVertex(x, y);
+        c++;
         ShapeCloseFlag = false;
     }
     //2,3点目は
@@ -528,6 +534,7 @@ void CAdminControl::CreateShape(float x, float y)
         }//閉じてなくて交差してなければそのまま追加
         else {
             shape_head->AddVertex(x, y);
+            c++;
             ShapeCloseFlag = false;
         }
     }
@@ -537,10 +544,12 @@ void CAdminControl::CreateShape(float x, float y)
             //自交差してなければ打つ
             if (CrossJudge(shape_head, shape_head->GetV(), x, y) != true) {
                 shape_head->AddVertex(x, y);
+                c++;
             }
         }//外包してなければ
         else if (GaihouJudge(shape_head, x, y) != true) {
             shape_head->AddVertex(shape_head->GetV()->GetX(), shape_head->GetV()->GetY());
+            c++;
             AddShape();
             ShapeCloseFlag = true;
         }
@@ -550,7 +559,16 @@ void CAdminControl::CreateShape(float x, float y)
     }//閉じてなくて交差してなければそのまま追加
     else {
         shape_head->AddVertex(x, y);
+        c++;
     }
+
+    if (c > 0) {
+        return true;
+    }
+    else { //打てなかったらfalseを返す
+        return false;
+    }
+
 }
 
 //座標軸を描画する
@@ -723,41 +741,49 @@ void CAdminControl::DrawStraight(float x, float y)
         kakudo = Kakudo(VectorX(preV, b), VectorY(preV, b), VectorX(preV, a), VectorY(preV, a));
         if (kakudo >= -2.356 && kakudo < -0.785) { //-45°～-135°(y負方向)
             if (prepreV == NULL) {
-                CreateShape(preV->GetX(), y);
-                StraightPreMove = 4;
+                if (CreateShape(preV->GetX(), y) == true) {
+                    StraightPreMove = 4;
+                }
             }
             else if (StraightPreMove != 3) {
-                CreateShape(preV->GetX(), y);
-                StraightPreMove = 4;
+                if (CreateShape(preV->GetX(), y) == true) {
+                    StraightPreMove = 4;
+                }
             }
         }
         else if (kakudo > 0.785 && kakudo <= 2.356) { //45°～135°(y正方向)
             if (prepreV == NULL) {
-                CreateShape(preV->GetX(), y);
-                StraightPreMove = 3;
+                if (CreateShape(preV->GetX(), y) == true) {
+                    StraightPreMove = 3;
+                }
             }else if(StraightPreMove != 4){
-                CreateShape(preV->GetX(), y);
-                StraightPreMove = 3;
+                if (CreateShape(preV->GetX(), y) == true) {
+                    StraightPreMove = 3;
+                }
             }  
         }
         else if (kakudo > -0.785 && kakudo <= 0.785) { //-45°～45°(x正方向)
             if (prepreV == NULL) {
-                CreateShape(x, preV->GetY());
-                StraightPreMove = 1;
+                if (CreateShape(x, preV->GetY()) == true) {
+                    StraightPreMove = 1;
+                }
             }
             else if (StraightPreMove != 2) {
-                CreateShape(x, preV->GetY());
-                StraightPreMove = 1;
+                if (CreateShape(x, preV->GetY()) == true) {
+                    StraightPreMove = 1;
+                }
             }
         }
         else { //135°～-135°(x負方向)
             if (prepreV == NULL) {
-                CreateShape(x, preV->GetY());
-                StraightPreMove = 2;
+                if (CreateShape(x, preV->GetY())==true) {
+                    StraightPreMove = 2;
+                }
             }
             else if (StraightPreMove != 1) {
-                CreateShape(x, preV->GetY());
-                StraightPreMove = 2;
+                if (CreateShape(x, preV->GetY()) == true) {
+                    StraightPreMove = 2;
+                }
             }
         }
     }
@@ -2497,6 +2523,18 @@ void CAdminControl::InsertChamferVertex(CVertex* pre, CVertex* lastV, bool f)
     cy1 = 0.0;
     cy2 = 0.0;
     cvp = NULL;
+}
+
+//立体物が何か選択されているか
+bool CAdminControl::SolidSelectNowJudge()
+{
+    for (CShape* nowS = shape_head->GetNextS(); nowS != NULL; nowS = nowS->GetNextS()) {
+        if (nowS->GetSelectShapeFlag() == true) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 //選択した辺の色を変える関数（実際に色を変えるのはDraw()内）

@@ -27,7 +27,7 @@ public:
 	float Distance(CVertex* s, float x, float y);
 
 	//新しい形状用のリストをcshape_headに追加する関数（新たなキャンバスを追加する）
-	void CreateShape(float x, float y);
+	bool CreateShape(float x, float y);
 
 	//自交差＆他交差の判定関数
 	bool CrossJudge(CShape* startS, CVertex* startV, float x, float y);
@@ -236,7 +236,8 @@ public:
 	bool SolidExepansionFlag = false;
 	//立体物を回転中かのフラグ
 	bool SolidRotateFlag = false;
-
+	//立体物が何か選択されているか
+	bool SolidSelectNowJudge();
 
 public:
 

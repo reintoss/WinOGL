@@ -45,11 +45,8 @@
 #define ID_32831                        32831
 #define ID_CHAMFER                      32832
 #define ID_32835                        32835
-#define ID_BUTTON32837                  32837
 #define ID_BUTTON32838                  32838
 #define ID_SOLIDLINE_SELECT             32839
-#define ID_BUTTON32840                  32840
-#define ID_BUTTON32841                  32841
 
 // Next default values for new objects
 // 
